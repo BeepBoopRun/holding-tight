@@ -192,8 +192,6 @@ def get_sequence(pdb: Path):
             res_info = (sequence_number, residue_name_single)
             if res_info not in sequence:
                 sequence.append(res_info)
-        for pair in sequence:
-            print(f"SEQ: {pair[0]} RES: {pair[1]}")
     return sequence
             
 

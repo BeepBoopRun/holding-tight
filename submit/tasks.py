@@ -8,7 +8,6 @@ from .models import Submission
 from .contacts import *
 
 from huey.contrib.djhuey import HUEY, task
-HUEY.flush()
 
 def analyse_submission(submission: Submission):
     sub_id = str(submission.id)
