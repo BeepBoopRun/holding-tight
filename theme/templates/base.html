@@ -1,0 +1,49 @@
+{% load static tailwind_tags %}
+<!DOCTYPE html>
+<html lang="en" class="w-screen min-h-screen overflow-y-auto overflow-x-hidden">
+    <head>
+	<title>Ligand Binding Comparison</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	{% tailwind_css %}
+	{% block extra_headers %}
+	{% endblock %}
+    </head>
+
+    <body class="text-black font-mono w-screen min-h-screen overflow-y-auto overflow-x-hidden">
+	<div id="sidebar" class="fixed top-0 left-0 z-40 w-64 h-dvh" >
+	    {% block sidebar %}
+	    <aside id="default-sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full sm:translate-x-0" aria-label="Sidebar">
+		<div class="h-full px-3 py-10 overflow-y-auto bg-indigo-300">
+		    <ul class="space-y-3 font-medium">
+			<li>
+			    <a href="/submit/" class="flex items-center p-2 text-gray-900 rounded-lg ring-2 ring-purple-900 bg-indigo-400 hover:bg-indigo-500 group">
+				<span class="flex-1 ms-3 whitespace-nowrap">Submit</span>
+			    </a>
+			</li>
+			<li>
+			    <a href="/search/" class="flex items-center p-2 text-gray-900 rounded-lg ring-2 ring-purple-900 bg-indigo-400 hover:bg-indigo-500 group">
+				<span class="flex-1 ms-3 whitespace-nowrap">Search</span>
+			    </a>
+			</li>
+			<li>
+			    <a href="/about" class="flex items-center p-2 text-gray-900 rounded-lg ring-2 ring-purple-900 bg-indigo-400 hover:bg-indigo-500 group">
+				<span class="flex-1 ms-3 whitespace-nowrap">About</span>
+			    </a>
+			</li>
+		</div>
+	    </aside>
+	    {% endblock %}
+	</div>
+	<div class="fixed left-64 bg-gray-100 w-full">
+	    <section class="h-screen m-8">
+		<h1 class="text-5xl">Ligand Binding Comparison</h1>
+		{% block content%}
+		{% endblock %}
+		{% block content2%}
+		{% endblock %}
+	    </section>
+	</div>
+    </body>
+</html>

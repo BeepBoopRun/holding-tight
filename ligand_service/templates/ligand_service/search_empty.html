@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content2 %}
+
+<h4 class="text-2xl">
+Provide ID of your job:
+</h4>
+
+<form id="searchForm" method="GET" class="my-3">
+  <input type="text" id="searchInput" placeholder="Enter job ID" class="w-lg p-2 bg-gray-300 border rounded-lg" required>
+  <button type="submit" class="p-2 bg-green-300 border rounded-lg">Search</button>
+</form>
+
+<script>
+  document.getElementById('searchForm').addEventListener('submit', function(event) {
+    event.preventDefault(); // stop normal form submission
+    const value = encodeURIComponent(document.getElementById('searchInput').value);
+    window.location.href = `/search/${value}`;
+  });
+</script>
+{% endblock %}

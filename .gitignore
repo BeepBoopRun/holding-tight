@@ -1,0 +1,4 @@
+user_uploads/*
+**/__pycache__
+huey.*
+db.*

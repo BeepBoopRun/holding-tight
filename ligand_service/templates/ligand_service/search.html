@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% load render_table from django_tables2 %}
+
+{% block content2 %}
+
+<h4 class="text-2xl mt-4">
+Job ID: {{ job_id }}
+</h4>
+<p class="text-2xl mt-4">
+Status: {{ status }}
+</p>
+
+{% if status == "Success" %}
+<h4 class="text-2xl mt-4">
+    Run details:
+</h4>
+
+<div id="details" class="text-lg">
+    {% for id, value, table in data %}
+    <p class="text-xl">
+    Run {{ id }}:
+    </p>
+    {{ name_VOI|default:"Value" }}: {{ value }}
+    Contacts by frame:
+    <div class="border h-64 overflow-auto w-fit"> 
+	{% render_table table %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

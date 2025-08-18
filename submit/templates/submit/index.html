@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+{% load static %}
+{% block extra_headers %}
+<script src="{% static 'submit/reactive.js' %}"> </script>
+{% endblock %}
+
+{% block content2 %}
+<p class="mt-2 text-xl">
+How it works?
+</p>
+<p>
+Provide a value of interest for each of the simulations, we will check if there is a relation between the contacts patterns and given values.
+</p>
+<h4 class="my-4">
+Please submit your files and values below:
+</h4>
+<form id="input-form" action="/submit/form" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ formset.management_form }}
+    {% for form in formset %}
+    {{ form }}
+    {% endfor %}
+    <div id="add-more-btn" class="border rounded-lg w-fit h-fit my-2 bg-gray-300">
+	<button type="button" onclick="addFiles()" class="m-1 p-2 cursor-pointer">Add additional files</button>
+    </div>
+    <button type="submit" class="bg-green-300 border rounded-lg p-2 cursor-pointer">Submit</button>
+    <p class="mt-2 mb-2">
+    Additional options:
+    </p>
+    <label class="border rounded-lg p-2">
+    Email when finished:
+    {% render_field details_form.email_field class="bg-gray-300 border" placeholder="Enter email"%}
+    </label>
+    <label class="border rounded-lg p-2 ml-2">
+    Specify name for VOI:
+    {% render_field details_form.name_VOI class="bg-gray-300 border" placeholder="Enter name"%}
+    </label>
+    <label class="p-2 rounded-lg border bg-gray-300 cursor-pointer m-2">
+    Use common numbering (B&W)
+    {% render_field details_form.use_common_numbering class="text-xl" %}
+    </label>
+    <p class="mt-2">
+    Note: Common numbering is available for only certain groups of GPCR's!
+    </p>
+    <div id="file-input-template" class="hidden">
+	{{ formset.empty_form}}
+    </div>
+</form>
+{% endblock %}
