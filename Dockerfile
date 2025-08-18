@@ -8,4 +8,4 @@ USER $MAMBA_USER
 RUN micromamba install -y -n base -f ./env.yaml && \
     micromamba clean --all --yes
 
-CMD [ "sh" ]
+CMD [ "sh", "docker_entrypoint.sh" ]
