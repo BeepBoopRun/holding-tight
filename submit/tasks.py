@@ -5,9 +5,16 @@ from django.conf import settings
 from huey.contrib.djhuey import db_task
 from .models import Submission
 
-from .contacts import *
+from .contacts import (
+    get_files_maestro,
+    get_files_dir,
+    get_interactions,
+    get_numbering,
+    get_pdb,
+)
 
-from huey.contrib.djhuey import HUEY, task
+from huey.contrib.djhuey import task
+
 
 def analyse_submission(submission: Submission):
     sub_id = str(submission.id)
@@ -24,17 +31,25 @@ def analyse_submission(submission: Submission):
             if files is None:
                 continue
         elif form.file_input == "T":
-            print(f"Encountered topology and trajectory directory with id: {dir_id}", flush=True)
+            print(
+                f"Encountered topology and trajectory directory with id: {dir_id}",
+                flush=True,
+            )
             files = get_files_dir(dir_path)
             if files is None:
                 continue
         else:
             continue
-        get_interactions(topology_file=files.topology, trajectory_file=files.trajectory, outfile=results_dir / f"result{dir_id}.tsv")
+        get_interactions(
+            topology_file=files.topology,
+            trajectory_file=files.trajectory,
+            outfile=results_dir / f"result{dir_id}.tsv",
+        )
     print("ALL CONTACT PATTERNS DONE!", flush=True)
 
     submission.finished_at = timezone.now()
     submission.save()
+
 
 def prepare_numbering(submission: Submission):
     sub_id = str(submission.id)
@@ -51,20 +66,31 @@ def prepare_numbering(submission: Submission):
             if files is None:
                 continue
         elif form.file_input == "T":
-            print(f"Encountered topology and trajectory directory with id: {dir_id}", flush=True)
+            print(
+                f"Encountered topology and trajectory directory with id: {dir_id}",
+                flush=True,
+            )
             files = get_files_dir(dir_path)
             if files is None:
                 continue
         else:
             continue
-        get_pdb(topology_file=files.topology, trajectory_file=files.trajectory, outfile=results_dir / f"top{dir_id}.pdb")
-        get_numbering(pdb_file=results_dir / f"top{dir_id}.pdb", outfile=results_dir / f"num_top{dir_id}.pdb")
+        get_pdb(
+            topology_file=files.topology,
+            trajectory_file=files.trajectory,
+            outfile=results_dir / f"top{dir_id}.pdb",
+        )
+        get_numbering(
+            pdb_file=results_dir / f"top{dir_id}.pdb",
+            outfile=results_dir / f"num_top{dir_id}.pdb",
+        )
     print("ALL PDB'S NUMBERED!", flush=True)
 
 
 @db_task()
 def queue_submission(submission: Submission):
     analyse_submission(submission)
+
 
 @task()
 def queue_numbering(submission: Submission):

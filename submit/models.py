@@ -1,30 +1,24 @@
 from django.db import models
-from django.utils import timezone
 
 import uuid
-import datetime
+
 
 class Submission(models.Model):
-    id = models.UUIDField(
-         primary_key = True,
-         default = uuid.uuid4,
-         editable = False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
     finished_at = models.DateTimeField(null=True, blank=True, default=None)
     name_VOI = models.CharField(null=True, blank=True, default=None)
     email = models.EmailField(null=True, blank=True, default=None)
     common_numbering = models.BooleanField()
 
+
 class SubmittedForm(models.Model):
     submission = models.ForeignKey(Submission, on_delete=models.CASCADE)
     form_id = models.IntegerField()
     value = models.FloatField()
 
-    FILE_INPUT_TYPES=(
-        ('M', 'MaestroDir'),
-        ('T', 'TopTrjPair'),
+    FILE_INPUT_TYPES = (
+        ("M", "MaestroDir"),
+        ("T", "TopTrjPair"),
     )
     file_input = models.CharField(max_length=1, choices=FILE_INPUT_TYPES)
-
-
-

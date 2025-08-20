@@ -10,10 +10,14 @@ from pathlib import Path
 import uuid
 import shutil
 
+
 def index(request):
     formset = FileInputFormSet(prefix="submit")
     details = InputDetails()
-    return render(request, "submit/index.html", {"formset": formset, "details_form": details})
+    return render(
+        request, "submit/index.html", {"formset": formset, "details_form": details}
+    )
+
 
 def handle_uploaded_file(file_handle, path_to_save_location: Path):
     print(f"Writing file: {path_to_save_location}", flush=True)
@@ -21,8 +25,9 @@ def handle_uploaded_file(file_handle, path_to_save_location: Path):
         for chunk in file_handle.chunks():
             destination.write(chunk)
 
+
 def form(request):
-    if request.method == "POST": 
+    if request.method == "POST":
         formset = FileInputFormSet(request.POST, request.FILES, prefix="submit")
         details_form = InputDetails(request.POST)
 
@@ -39,16 +44,20 @@ def form(request):
         submission_path = Path(settings.MEDIA_ROOT).joinpath(str(submission_id))
         submission_path.mkdir()
 
-
-        submission = Submission.objects.create(id=submission_id, email = user_email, common_numbering = use_common_numbering, name_VOI = name_VOI)
-        verified_submission = True 
+        submission = Submission.objects.create(
+            id=submission_id,
+            email=user_email,
+            common_numbering=use_common_numbering,
+            name_VOI=name_VOI,
+        )
+        verified_submission = True
 
         print(submission, flush=True)
 
         try:
-            for idx,form in enumerate(formset):
+            for idx, form in enumerate(formset):
                 if not form.is_valid():
-                    print(f"INVALID FORM!!".center(20, "-"), flush=True)
+                    print("INVALID FORM!!".center(20, "-"), flush=True)
                     print(form.errors, flush=True)
                     verified_submission = False
                     break
@@ -56,29 +65,42 @@ def form(request):
                 form_path = submission_path.joinpath(str(idx))
                 print(f"FORM {idx}")
 
-                if form.cleaned_data['choice_field'] == 'MaestroDir':
-                    SubmittedForm.objects.create(form_id = idx,
-                                                 submission = submission,
-                                                 file_input="M",
-                                                 value = form.cleaned_data["value_field"]).save()
-                    for file in form.cleaned_data['file_field']:
-                        path = form_path.joinpath(form.cleaned_data['paths_field'][file.name]).parents[0]
+                if form.cleaned_data["choice_field"] == "MaestroDir":
+                    SubmittedForm.objects.create(
+                        form_id=idx,
+                        submission=submission,
+                        file_input="M",
+                        value=form.cleaned_data["value_field"],
+                    ).save()
+                    for file in form.cleaned_data["file_field"]:
+                        path = form_path.joinpath(
+                            form.cleaned_data["paths_field"][file.name]
+                        ).parents[0]
                         path.mkdir(parents=True, exist_ok=True)
                         filename = "_".join(file.name.split("_")[2:])
-                        handle_uploaded_file(file_handle=file, path_to_save_location=path / filename)
-                elif form.cleaned_data['choice_field'] == 'TopTrjPair':
-                    SubmittedForm.objects.create(form_id = idx,
-                                                 submission = submission,
-                                                 file_input="T",
-                                                 value = form.cleaned_data["value_field"]).save()
-                    for file in form.cleaned_data['file_field']:
+                        handle_uploaded_file(
+                            file_handle=file, path_to_save_location=path / filename
+                        )
+                elif form.cleaned_data["choice_field"] == "TopTrjPair":
+                    SubmittedForm.objects.create(
+                        form_id=idx,
+                        submission=submission,
+                        file_input="T",
+                        value=form.cleaned_data["value_field"],
+                    ).save()
+                    for file in form.cleaned_data["file_field"]:
                         form_path.mkdir(exist_ok=True)
-                        handle_uploaded_file(file_handle=file, path_to_save_location=form_path / file.name)
+                        handle_uploaded_file(
+                            file_handle=file,
+                            path_to_save_location=form_path / file.name,
+                        )
 
                 else:
                     verified_submission = False
                     submission.delete()
-                    print(f"Unsupported file input format used: {form.cleaned_data['choice_field']}")
+                    print(
+                        f"Unsupported file input format used: {form.cleaned_data['choice_field']}"
+                    )
                     break
         finally:
             if not verified_submission:
@@ -89,12 +111,13 @@ def form(request):
         print("Method other than POST", flush=True)
     print(submission, flush=True)
     submission.save()
-    queue_submission(submission) 
+    queue_submission(submission)
 
     if use_common_numbering is True:
         queue_numbering(submission)
 
     return HttpResponseRedirect(f"/search/{submission_id}")
+
 
 def search(request):
     return HttpResponse("Response")

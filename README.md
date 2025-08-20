@@ -18,6 +18,8 @@ To see the site, go to *localhost:8000*.
 
 Notice that this website is still a work in progress and doesn't represent the final result. Though, all feedback is welcome.
 
+DJANGO_SECRET_KEY in .env should be changed when setting up prod!
+
 # What might change
 
 - Static files are served using whitenoise, might change that to nginx.

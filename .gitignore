@@ -2,3 +2,6 @@ user_uploads/*
 **/__pycache__
 huey.*
 db.*
+GPCRdb
+
+.ruff_cache

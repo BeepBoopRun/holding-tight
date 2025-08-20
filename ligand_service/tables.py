@@ -1,5 +1,6 @@
 import django_tables2 as tables
 
+
 class ContactsTable(tables.Table):
     frame = tables.Column()
     interaction_type = tables.Column()

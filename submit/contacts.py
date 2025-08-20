@@ -5,19 +5,20 @@ import subprocess as sb
 from pathlib import Path
 from typing import NamedTuple
 
-import vmd
 from vmd import molecule, atomsel
 
-DYNAMIC_CONTACTS_PATH = os.path.abspath('getcontacts/get_dynamic_contacts.py') 
+DYNAMIC_CONTACTS_PATH = os.path.abspath("getcontacts/get_dynamic_contacts.py")
 CURRENT_INTERPRETER_PATH = sys.executable
-CORES_AVAILABLE = '12'
-GPCRDB_NUMBERING_ENDPOINT = 'https://gpcrdb.org/services/structure/assign_generic_numbers'
-GPCRDB_RESIDUES_EXTENDED_ENDPOINT = 'https://gpcrdb.org/services/residues/extended/'
+CORES_AVAILABLE = "12"
+GPCRDB_NUMBERING_ENDPOINT = (
+    "https://gpcrdb.org/services/structure/assign_generic_numbers"
+)
+GPCRDB_RESIDUES_EXTENDED_ENDPOINT = "https://gpcrdb.org/services/residues/extended/"
 
 THREE_TO_ONE = {
     "ALA": "A",
     "ARG": "R",
-    "ASH": "0", # no idea
+    "ASH": "0",  # no idea
     "ASN": "N",
     "ASP": "D",
     "CYS": "C",
@@ -25,7 +26,7 @@ THREE_TO_ONE = {
     "GLN": "Q",
     "GLY": "G",
     "HIS": "H",
-    "HIE": "H", # unsure
+    "HIE": "H",  # unsure
     "ILE": "I",
     "LEU": "L",
     "LYS": "K",
@@ -40,12 +41,13 @@ THREE_TO_ONE = {
     "UNK": "X",
 }
 
+
 class VMDFiles(NamedTuple):
     topology: Path
     trajectory: Path
 
-def get_files_maestro(directory: Path) -> VMDFiles | None:
 
+def get_files_maestro(directory: Path) -> VMDFiles | None:
     print(f"Directory: {directory}")
 
     top_candidates: list[Path] = []
@@ -60,7 +62,7 @@ def get_files_maestro(directory: Path) -> VMDFiles | None:
     if not top_candidates or not trj_candidates:
         print("Needed files not found in given directory!")
         return None
-    
+
     chosen_top = None
     chosen_trj = None
 
@@ -70,7 +72,6 @@ def get_files_maestro(directory: Path) -> VMDFiles | None:
             break
     if chosen_top is None:
         chosen_top = sorted(top_candidates)[0]
-
 
     for candidate in trj_candidates:
         if candidate.name == "clickme.dtr":
@@ -84,6 +85,7 @@ def get_files_maestro(directory: Path) -> VMDFiles | None:
 
     return VMDFiles(chosen_top, chosen_trj)
 
+
 def get_files_dir(directory: Path) -> VMDFiles | None:
     top = None
     trj = None
@@ -93,25 +95,35 @@ def get_files_dir(directory: Path) -> VMDFiles | None:
         elif file.suffix in [".dcd", ".xtc", ".trr"] and trj is None:
             trj = file
         if top is not None and trj is not None:
-            return VMDFiles(top,trj)
+            return VMDFiles(top, trj)
     return None
+
 
 def get_interactions(topology_file: Path, trajectory_file: Path, outfile: Path):
     process = sb.Popen(
-            [CURRENT_INTERPRETER_PATH, DYNAMIC_CONTACTS_PATH, 
-             "--trajectory", trajectory_file, 
-             "--topology", topology_file,
-             "--itypes", "all",
-             "--output", outfile,
-             "--sele2", "ligand",
-             "--cores", CORES_AVAILABLE],
-            stdout=sb.PIPE,
-            stderr=sb.STDOUT,
-            text=True,
-            bufsize=1
-            )
+        [
+            CURRENT_INTERPRETER_PATH,
+            DYNAMIC_CONTACTS_PATH,
+            "--trajectory",
+            trajectory_file,
+            "--topology",
+            topology_file,
+            "--itypes",
+            "all",
+            "--output",
+            outfile,
+            "--sele2",
+            "ligand",
+            "--cores",
+            CORES_AVAILABLE,
+        ],
+        stdout=sb.PIPE,
+        stderr=sb.STDOUT,
+        text=True,
+        bufsize=1,
+    )
 
-    assert(process.stdout is not None)
+    assert process.stdout is not None
 
     for line in process.stdout:
         print("Output:", line.strip())  # or parse percentage here
@@ -119,31 +131,39 @@ def get_interactions(topology_file: Path, trajectory_file: Path, outfile: Path):
     process.wait()
     print("Done!")
 
+
 def get_pdb(topology_file: Path, trajectory_file: Path, outfile: Path):
     molid = molecule.load("mae", str(topology_file))
     molecule.read(molid, trajectory_file.suffix[1:], str(trajectory_file))
 
-    sel = atomsel('all', molid=molid)
-    sel.write('pdb', str(outfile))
+    sel = atomsel("all", molid=molid)
+    sel.write("pdb", str(outfile))
+
 
 def get_numbering(pdb_file: Path, outfile: Path):
-    with open(pdb_file, 'rb') as f:
-        files = {'pdb_file': f}
+    with open(pdb_file, "rb") as f:
+        files = {"pdb_file": f}
         response = requests.post(GPCRDB_NUMBERING_ENDPOINT, files=files)
 
     if response.ok:
-        with open(outfile, 'wb') as f:
+        with open(outfile, "wb") as f:
             f.write(response.content)
     else:
-        print(f"Failed to fetch numbering! Error {response.status_code}: {response.text}")
+        print(
+            f"Failed to fetch numbering! Error {response.status_code}: {response.text}"
+        )
+
 
 def get_residues_extended(uniprot_identifier: str):
-        response = requests.post(GPCRDB_RESIDUES_EXTENDED_ENDPOINT + uniprot_identifier)
-        if response.ok:
-            return response.json()
+    response = requests.post(GPCRDB_RESIDUES_EXTENDED_ENDPOINT + uniprot_identifier)
+    if response.ok:
+        return response.json()
 
-def create_translation_dict(numbered_pdb: Path) -> dict[tuple[str, str, str], list[str]]:
-    trans_dict = {} 
+
+def create_translation_dict(
+    numbered_pdb: Path,
+) -> dict[tuple[str, str, str], list[str]]:
+    trans_dict = {}
     with open(numbered_pdb, "r") as f:
         print("File open...")
         for line in f.readlines():
@@ -156,7 +176,11 @@ def create_translation_dict(numbered_pdb: Path) -> dict[tuple[str, str, str], li
             atom_identifier = (chain, residue_name, sequence_number)
             if atom_name == "N":
                 BW_number = line[61:66].strip()
-                if float(BW_number) <= 0 or float(BW_number) >= 8.1 or float(BW_number) == 0:
+                if (
+                    float(BW_number) <= 0
+                    or float(BW_number) >= 8.1
+                    or float(BW_number) == 0
+                ):
                     continue
                 if atom_identifier in trans_dict:
                     trans_dict[atom_identifier][0] = BW_number
@@ -164,17 +188,24 @@ def create_translation_dict(numbered_pdb: Path) -> dict[tuple[str, str, str], li
                     trans_dict[atom_identifier] = [BW_number, None]
             if atom_name == "CA":
                 GPCRDB_number = line[61:66].strip()
-                if float(GPCRDB_number) <= -8.1 or float(GPCRDB_number) >= 8.1 or float(GPCRDB_number) == 0:
+                if (
+                    float(GPCRDB_number) <= -8.1
+                    or float(GPCRDB_number) >= 8.1
+                    or float(GPCRDB_number) == 0
+                ):
                     continue
                 if float(GPCRDB_number) > 0:
                     GPCRDB_number = GPCRDB_number.replace(".", "x")
                 else:
-                    GPCRDB_number = str(round(abs(-float(GPCRDB_number) + 0.001), 3)).replace(".", "x")
+                    GPCRDB_number = str(
+                        round(abs(-float(GPCRDB_number) + 0.001), 3)
+                    ).replace(".", "x")
                 if atom_identifier in trans_dict:
                     trans_dict[atom_identifier][1] = GPCRDB_number
                 else:
                     trans_dict[atom_identifier] = [None, GPCRDB_number]
     return trans_dict
+
 
 def get_sequence(pdb: Path):
     with open(pdb, "r") as f:
@@ -193,23 +224,22 @@ def get_sequence(pdb: Path):
             if res_info not in sequence:
                 sequence.append(res_info)
     return sequence
-            
 
 
 if __name__ == "__main__":
- #    files = get_files_maestro(Path("/home/zcrank/pan/dev/user_uploads/e7136278-2ee5-4e4b-8883-7b465253f4ae/0/"))
- #    if files is None:
- #        print("Couldn't find necesarry files!")
- #        sys.exit(1)
- #
+    #    files = get_files_maestro(Path("/home/zcrank/pan/dev/user_uploads/e7136278-2ee5-4e4b-8883-7b465253f4ae/0/"))
+    #    if files is None:
+    #        print("Couldn't find necesarry files!")
+    #        sys.exit(1)
+    #
     NUMBERED_PATH = Path("./out.pdb")
-    #get_pdb(files.topology, files.trajectory, outfile=NUMBERED_PATH.absolute())
-    #get_numbering(NUMBERED_PATH, outfile=Path("./numbered_out.pdb"))
-    #out = create_translation_dict(Path("./numbered_out.pdb"))
-    #print(out)
+    # get_pdb(files.topology, files.trajectory, outfile=NUMBERED_PATH.absolute())
+    # get_numbering(NUMBERED_PATH, outfile=Path("./numbered_out.pdb"))
+    # out = create_translation_dict(Path("./numbered_out.pdb"))
+    # print(out)
     sequence = get_sequence(NUMBERED_PATH)
     aa_seq = ""
-    for seq,res in sequence:
+    for seq, res in sequence:
         aa_seq += res
     print(aa_seq)
     gpcrdb_num = get_residues_extended("4dkl")
@@ -220,4 +250,3 @@ if __name__ == "__main__":
     for res_info in gpcrdb_num:
         aa_seq_gpcrdb += res_info["amino_acid"]
     print(aa_seq_gpcrdb)
-
