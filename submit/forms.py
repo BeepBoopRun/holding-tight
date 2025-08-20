@@ -28,21 +28,21 @@ class MultipleFileField(forms.FileField):
 
 
 class FileInputForm(forms.Form):
-    choice_field = forms.ChoiceField(
+    choice = forms.ChoiceField(
         choices=[
             ("TopTrjPair", "Topology and trajectory files"),
             ("MaestroDir", "Maestro Directory"),
         ]
     )
-    file_field = MultipleFileField()
-    paths_field = forms.JSONField(required=False)
-    value_field = forms.FloatField()
-    name_field = forms.CharField(max_length=256, required=False)
+    file = MultipleFileField()
+    paths = forms.JSONField(required=False)
+    value = forms.FloatField()
+    name = forms.CharField(max_length=256, required=False)
     template_name = "submit/form_snippet.html"
 
 
 class InputDetails(forms.Form):
-    email_field = forms.EmailField(required=False)
+    email = forms.EmailField(required=False)
     use_common_numbering = forms.BooleanField(required=False)
     name_VOI = forms.CharField(required=False)
 

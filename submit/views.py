@@ -35,7 +35,7 @@ def form(request):
         name_VOI = None
 
         if details_form.is_valid():
-            user_email = details_form.cleaned_data["email_field"]
+            user_email = details_form.cleaned_data["email"]
             use_common_numbering = details_form.cleaned_data["use_common_numbering"]
             name_VOI = details_form.cleaned_data["name_VOI"]
 
@@ -64,32 +64,32 @@ def form(request):
                 form_path = submission_path.joinpath(str(idx))
                 print(f"FORM {idx}")
 
-                if form.cleaned_data["choice_field"] == "MaestroDir":
+                if form.cleaned_data["choice"] == "MaestroDir":
                     SubmittedForm.objects.create(
                         form_id=idx,
                         submission=submission,
                         file_input="M",
-                        value=form.cleaned_data["value_field"],
-                        name=form.cleaned_data["name_field"]
+                        value=form.cleaned_data["value"],
+                        name=form.cleaned_data["name"]
                     ).save()
-                    for file in form.cleaned_data["file_field"]:
+                    for file in form.cleaned_data["file"]:
                         path = form_path.joinpath(
-                            form.cleaned_data["paths_field"][file.name]
+                            form.cleaned_data["paths"][file.name]
                         ).parents[0]
                         path.mkdir(parents=True, exist_ok=True)
                         filename = "_".join(file.name.split("_")[2:])
                         handle_uploaded_file(
                             file_handle=file, path_to_save_location=path / filename
                         )
-                elif form.cleaned_data["choice_field"] == "TopTrjPair":
+                elif form.cleaned_data["choice"] == "TopTrjPair":
                     SubmittedForm.objects.create(
                         form_id=idx,
                         submission=submission,
                         file_input="T",
-                        value=form.cleaned_data["value_field"],
-                        name=form.cleaned_data["name_field"]
+                        value=form.cleaned_data["value"],
+                        name=form.cleaned_data["name"]
                     ).save()
-                    for file in form.cleaned_data["file_field"]:
+                    for file in form.cleaned_data["file"]:
                         form_path.mkdir(exist_ok=True)
                         handle_uploaded_file(
                             file_handle=file,
@@ -100,7 +100,7 @@ def form(request):
                     verified_submission = False
                     submission.delete()
                     print(
-                        f"Unsupported file input format used: {form.cleaned_data['choice_field']}"
+                        f"Unsupported file input format used: {form.cleaned_data['choice']}"
                     )
                     break
         finally:

@@ -26,19 +26,10 @@ def empty_search(request):
 
 
 def search(request, job_id):
-
     try:
         job_id = uuid.UUID(job_id)
-    except ValueError:
-        return render(
-            request,
-            "ligand_service/search.html",
-            {"status": "This is not a correct JOB ID!", "job_id": job_id},
-        )
-
-    try:
         submission = Submission.objects.get(id=job_id)
-    except ObjectDoesNotExist:
+    except:
         return render(
             request,
             "ligand_service/search.html",
