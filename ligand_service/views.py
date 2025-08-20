@@ -1,5 +1,6 @@
 from pathlib import Path
 import csv
+import uuid
 
 from django.db.models import ObjectDoesNotExist
 from django.http import HttpResponseRedirect
@@ -25,6 +26,16 @@ def empty_search(request):
 
 
 def search(request, job_id):
+
+    try:
+        job_id = uuid.UUID(job_id)
+    except ValueError:
+        return render(
+            request,
+            "ligand_service/search.html",
+            {"status": "This is not a correct JOB ID!", "job_id": job_id},
+        )
+
     try:
         submission = Submission.objects.get(id=job_id)
     except ObjectDoesNotExist:
@@ -82,9 +93,14 @@ def search(request, job_id):
                 table = ContactsTableNumbered(raw_table[0:1000])
             else:
                 table = ContactsTable(raw_table[0:1000])
+
+            if form.name is not None and form.name != "":
+                run_name = form.name
+            else:
+                run_name = file_id
             data.append(
                 (
-                    file_id,
+                    run_name,
                     form.value,
                     table,
                 )

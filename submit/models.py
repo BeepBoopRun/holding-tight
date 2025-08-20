@@ -16,6 +16,7 @@ class SubmittedForm(models.Model):
     submission = models.ForeignKey(Submission, on_delete=models.CASCADE)
     form_id = models.IntegerField()
     value = models.FloatField()
+    name = models.CharField(null=True, blank=True, default=None)
 
     FILE_INPUT_TYPES = (
         ("M", "MaestroDir"),

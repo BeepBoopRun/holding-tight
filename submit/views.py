@@ -20,7 +20,6 @@ def index(request):
 
 
 def handle_uploaded_file(file_handle, path_to_save_location: Path):
-    print(f"Writing file: {path_to_save_location}", flush=True)
     with open(path_to_save_location, "wb+") as destination:
         for chunk in file_handle.chunks():
             destination.write(chunk)
@@ -71,6 +70,7 @@ def form(request):
                         submission=submission,
                         file_input="M",
                         value=form.cleaned_data["value_field"],
+                        name=form.cleaned_data["name_field"]
                     ).save()
                     for file in form.cleaned_data["file_field"]:
                         path = form_path.joinpath(
@@ -87,6 +87,7 @@ def form(request):
                         submission=submission,
                         file_input="T",
                         value=form.cleaned_data["value_field"],
+                        name=form.cleaned_data["name_field"]
                     ).save()
                     for file in form.cleaned_data["file_field"]:
                         form_path.mkdir(exist_ok=True)

@@ -26,7 +26,7 @@ urlpatterns = [
     path("", views.redirect_to_submit),
     path("about/", views.render_about),
     path("search/", views.empty_search),
-    path("search/<uuid:job_id>", views.search),
+    path("search/<str:job_id>", views.search),
 ]
 
 if settings.DEBUG:

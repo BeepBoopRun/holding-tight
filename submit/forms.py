@@ -37,6 +37,7 @@ class FileInputForm(forms.Form):
     file_field = MultipleFileField()
     paths_field = forms.JSONField(required=False)
     value_field = forms.FloatField()
+    name_field = forms.CharField(max_length=256, required=False)
     template_name = "submit/form_snippet.html"
 
 
