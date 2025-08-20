@@ -79,9 +79,9 @@ def search(request, job_id):
                             )
                             row["numbered_residue"] = dic[key][1]
                 print(dic, flush=True)
-                table = ContactsTableNumbered(raw_table[0:100])
+                table = ContactsTableNumbered(raw_table[0:1000])
             else:
-                table = ContactsTable(raw_table[0:100])
+                table = ContactsTable(raw_table[0:1000])
             data.append(
                 (
                     file_id,

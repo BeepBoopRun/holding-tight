@@ -22,7 +22,7 @@ Status: {{ status }}
     </p>
     {{ name_VOI|default:"Value" }}: {{ value }}
     Contacts by frame:
-    <div class="border h-64 overflow-auto w-fit"> 
+    <div class="border overflow-auto w-fit max-h-80"> 
 	{% render_table table %}
     </div>
     {% endfor %}

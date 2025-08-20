@@ -11,10 +11,10 @@
 	{% endblock %}
     </head>
 
-    <body class="text-black font-mono w-screen min-h-screen overflow-y-auto overflow-x-hidden">
+    <body class="text-black bg-gray-100 font-mono w-screen min-h-screen overflow-y-auto overflow-x-hidden m-0">
 	<div id="sidebar" class="fixed top-0 left-0 z-40 w-64 h-dvh" >
 	    {% block sidebar %}
-	    <aside id="default-sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full sm:translate-x-0" aria-label="Sidebar">
+	    <aside id="default-sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen" aria-label="Sidebar">
 		<div class="h-full px-3 py-10 overflow-y-auto bg-indigo-300">
 		    <ul class="space-y-3 font-medium">
 			<li>
@@ -36,9 +36,9 @@
 	    </aside>
 	    {% endblock %}
 	</div>
-	<div class="fixed left-64 bg-gray-100 w-full">
-	    <section class="h-screen m-8">
-		<h1 class="text-5xl">Ligand Binding Comparison</h1>
+	<div class="ml-72 mt-8">
+	    <section class="min-h-screen">
+		<h1 class="text-3xl">Correlational Analysis of Ligand-Protein interactions (CORAL-MD)</h1>
 		{% block content%}
 		{% endblock %}
 		{% block content2%}
