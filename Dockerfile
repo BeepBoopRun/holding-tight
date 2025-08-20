@@ -1,6 +1,6 @@
 FROM mambaorg/micromamba:2.3.0
 
-WORKDIR /prod
+WORKDIR /home/$MAMBA_USER/prod
 
 COPY --chown=$MAMBA_USER:$MAMBA_USER . .
 
