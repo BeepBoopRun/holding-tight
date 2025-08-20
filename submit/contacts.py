@@ -133,7 +133,10 @@ def get_interactions(topology_file: Path, trajectory_file: Path, outfile: Path):
 
 
 def get_pdb(topology_file: Path, trajectory_file: Path, outfile: Path):
-    molid = molecule.load("mae", str(topology_file))
+    filetype = topology_file.suffix[1:]
+    if filetype == "cms":
+        filetype = "mae"
+    molid = molecule.load(filetype, str(topology_file))
     molecule.read(molid, trajectory_file.suffix[1:], str(trajectory_file))
 
     sel = atomsel("all", molid=molid)

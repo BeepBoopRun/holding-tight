@@ -39,7 +39,8 @@ def analyse_submission(submission: Submission):
             if files is None:
                 continue
         else:
-            continue
+            # unreachable
+            assert False
         get_interactions(
             topology_file=files.topology,
             trajectory_file=files.trajectory,
@@ -74,7 +75,8 @@ def prepare_numbering(submission: Submission):
             if files is None:
                 continue
         else:
-            continue
+            # unreachable
+            assert False
         get_pdb(
             topology_file=files.topology,
             trajectory_file=files.trajectory,
