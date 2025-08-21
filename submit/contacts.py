@@ -4,8 +4,12 @@ import os
 import subprocess as sb
 from pathlib import Path
 from typing import NamedTuple
+import subprocess as sb
 
 from vmd import molecule, atomsel
+
+BLASTP_PATH = os.path.abspath("../blast/ncbi-blast-2.17.0+/bin/blastp")
+BLASTDB_PATH = os.path.abspath("../blast/blast_db")
 
 DYNAMIC_CONTACTS_PATH = os.path.abspath("getcontacts/get_dynamic_contacts.py")
 CURRENT_INTERPRETER_PATH = sys.executable
@@ -41,6 +45,32 @@ THREE_TO_ONE = {
     "UNK": "X",
 }
 
+def get_accession_number(seq: str) -> str | None:
+    job = sb.run([BLASTP_PATH, "-query", "-", "-db", BLASTDB_PATH, "-max_target_seqs", "1"], capture_output=True, input=seq.encode())
+    if job.returncode != 0:
+        print(f"Getting accession number failed! Input: {seq}")
+        return None
+    for line in job.stdout.decode().splitlines():
+        if line.startswith(">"):
+            print(line.strip()[1:])
+    return job.stdout.decode()
+    
+def filetype(file: Path) -> str:
+    filetype = file.suffix[1:]
+    if filetype == "cms":
+        filetype = "mae"
+        return filetype
+    return filetype
+
+def get_sequence2(topology_file: Path, trajectory_file: Path) -> str:
+    molid = molecule.load(filetype(topology_file), str(topology_file))
+    molecule.read(molid, filetype(trajectory_file), str(trajectory_file))
+
+    protein = atomsel("protein", molid=molid)
+    residues = [None] * (max(protein.residue) + 1)
+    for (chain, resname, residue_id, atom_name) in zip(protein.chain, protein.resname, protein.residue, protein.name):
+        residues[residue_id] = THREE_TO_ONE.get(resname, "X")
+    return "".join(residues)
 
 class VMDFiles(NamedTuple):
     topology: Path
@@ -133,11 +163,8 @@ def get_interactions(topology_file: Path, trajectory_file: Path, outfile: Path):
 
 
 def get_pdb(topology_file: Path, trajectory_file: Path, outfile: Path):
-    filetype = topology_file.suffix[1:]
-    if filetype == "cms":
-        filetype = "mae"
-    molid = molecule.load(filetype, str(topology_file))
-    molecule.read(molid, trajectory_file.suffix[1:], str(trajectory_file))
+    molid = molecule.load(filetype(topology_file), str(topology_file))
+    molecule.read(molid, filetype(trajectory_file), str(trajectory_file))
 
     sel = atomsel("all", molid=molid)
     sel.write("pdb", str(outfile))
@@ -230,26 +257,27 @@ def get_sequence(pdb: Path):
 
 
 if __name__ == "__main__":
-    #    files = get_files_maestro(Path("/home/zcrank/pan/dev/user_uploads/e7136278-2ee5-4e4b-8883-7b465253f4ae/0/"))
-    #    if files is None:
-    #        print("Couldn't find necesarry files!")
-    #        sys.exit(1)
-    #
-    NUMBERED_PATH = Path("./out.pdb")
+    files = get_files_maestro(Path("../user_uploads/40aef683-9676-4525-b543-12b83a1eca76/0").absolute())
+    if files is None:
+        print("Couldn't find necesarry files!")
+        sys.exit(1)
+    seq = get_sequence2(files.topology, files.trajectory)
+    accession = get_accession_number(seq)
+    
     # get_pdb(files.topology, files.trajectory, outfile=NUMBERED_PATH.absolute())
     # get_numbering(NUMBERED_PATH, outfile=Path("./numbered_out.pdb"))
     # out = create_translation_dict(Path("./numbered_out.pdb"))
     # print(out)
-    sequence = get_sequence(NUMBERED_PATH)
-    aa_seq = ""
-    for seq, res in sequence:
-        aa_seq += res
-    print(aa_seq)
-    gpcrdb_num = get_residues_extended("4dkl")
-    if gpcrdb_num is None:
-        print("Something went wrong with GPCRDB call!!")
-        sys.exit(1)
-    aa_seq_gpcrdb = ""
-    for res_info in gpcrdb_num:
-        aa_seq_gpcrdb += res_info["amino_acid"]
-    print(aa_seq_gpcrdb)
+   #  sequence = get_sequence(NUMBERED_PATH)
+   #  aa_seq = ""
+   #  for seq, res in sequence:
+   #     aa_seq += res
+   #  print(aa_seq)
+   #  gpcrdb_num = get_residues_extended("4dkl")
+   #  if gpcrdb_num is None:
+   #      print("Something went wrong with GPCRDB call!!")
+   #      sys.exit(1)
+   #  aa_seq_gpcrdb = ""
+   #  for res_info in gpcrdb_num:
+   #      aa_seq_gpcrdb += res_info["amino_acid"]
+   #  print(aa_seq_gpcrdb)

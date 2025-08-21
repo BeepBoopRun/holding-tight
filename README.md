@@ -8,9 +8,10 @@ To get the server running ASAP, do:
 This method also cleans after itself!
 
 
-Otherwise, build as you normally would, to run do:
-
+To build normally, do:
 ```bash
+./blast/prepare_blast.sh
+docker build .
 docker run -it -p 8000:8000 [IMAGE ID] 
 ```
 
@@ -18,7 +19,8 @@ To see the site, go to *localhost:8000*.
 
 Notice that this website is still a work in progress and doesn't represent the final result. Though, all feedback is welcome.
 
-DJANGO_SECRET_KEY in .env should be changed when setting up prod!
+> [!WARNING]  
+> DJANGO_SECRET_KEY in .env should be changed when setting up prod!
 
 # What might change
 

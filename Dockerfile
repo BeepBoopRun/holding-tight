@@ -1,8 +1,7 @@
 FROM mambaorg/micromamba:2.3.0
 
+COPY --chown=$MAMBA_USER:$MAMBA_USER . /home/$MAMBA_USER/prod
 WORKDIR /home/$MAMBA_USER/prod
-
-COPY --chown=$MAMBA_USER:$MAMBA_USER . .
 
 USER $MAMBA_USER
 RUN micromamba install -y -n base -f ./env.yaml && \
