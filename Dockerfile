@@ -8,4 +8,6 @@ USER $MAMBA_USER
 RUN micromamba install -y -n base -f ./env.yaml && \
     micromamba clean --all --yes
 
+RUN ./blast/prepare_blast.sh
+
 CMD [ "sh", "docker_entrypoint.sh" ]

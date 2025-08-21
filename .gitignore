@@ -5,3 +5,7 @@ db.*
 GPCRdb
 
 .ruff_cache
+
+blast/*
+!prepare_blast.sh
+!makeblastdb.py
