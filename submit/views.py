@@ -41,7 +41,7 @@ def form(request):
 
         submission_id = uuid.uuid4()
         submission_path = Path(settings.MEDIA_ROOT).joinpath(str(submission_id))
-        submission_path.mkdir()
+        submission_path.mkdir(parents=True)
 
         submission = Submission.objects.create(
             id=submission_id,
