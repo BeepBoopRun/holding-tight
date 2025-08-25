@@ -67,7 +67,7 @@ def form(request):
                         submission=submission,
                         file_input="M",
                         value=form.cleaned_data["value"],
-                        name=form.cleaned_data["name"]
+                        name=form.cleaned_data["name"],
                     ).save()
                     for file in form.cleaned_data["file"]:
                         path = form_path.joinpath(
@@ -84,7 +84,7 @@ def form(request):
                         submission=submission,
                         file_input="T",
                         value=form.cleaned_data["value"],
-                        name=form.cleaned_data["name"]
+                        name=form.cleaned_data["name"],
                     ).save()
                     for file in form.cleaned_data["file"]:
                         form_path.mkdir(exist_ok=True)

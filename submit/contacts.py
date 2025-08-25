@@ -45,8 +45,13 @@ THREE_TO_ONE = {
     "UNK": "X",
 }
 
+
 def get_uniprot_identifier(seq: str) -> str | None:
-    job = sb.run([BLASTP_PATH, "-query", "-", "-db", BLASTDB_PATH, "-max_target_seqs", "1"], capture_output=True, input=seq.encode())
+    job = sb.run(
+        [BLASTP_PATH, "-query", "-", "-db", BLASTDB_PATH, "-max_target_seqs", "1"],
+        capture_output=True,
+        input=seq.encode(),
+    )
     if job.returncode != 0:
         print(f"Getting accession number failed! Input: {seq}")
         return None
@@ -55,6 +60,7 @@ def get_uniprot_identifier(seq: str) -> str | None:
             return line.strip()[1:].split("|")[1]
     return None
 
+
 def filetype(file: Path) -> str:
     filetype = file.suffix[1:]
     if filetype == "cms":
@@ -62,15 +68,19 @@ def filetype(file: Path) -> str:
         return filetype
     return filetype
 
+
 def get_sequence2(topology_file: Path, trajectory_file: Path) -> str:
     molid = molecule.load(filetype(topology_file), str(topology_file))
     molecule.read(molid, filetype(trajectory_file), str(trajectory_file))
 
     protein = atomsel("protein", molid=molid)
     residues = [None] * (max(protein.residue) + 1)
-    for (chain, resname, residue_id, atom_name) in zip(protein.chain, protein.resname, protein.residue, protein.name):
+    for chain, resname, residue_id, atom_name in zip(
+        protein.chain, protein.resname, protein.residue, protein.name
+    ):
         residues[residue_id] = THREE_TO_ONE.get(resname, "X")
     return "".join(residues)
+
 
 class VMDFiles(NamedTuple):
     topology: Path
@@ -184,7 +194,7 @@ def get_numbering(pdb_file: Path, outfile: Path):
         )
 
 
-def get_residues_extended(uniprot_identifier: str) -> str|None:
+def get_residues_extended(uniprot_identifier: str) -> str | None:
     url = GPCRDB_RESIDUES_EXTENDED_ENDPOINT + uniprot_identifier
     print(url)
     response = requests.post(url)
@@ -261,7 +271,11 @@ def get_sequence(pdb: Path):
 
 
 if __name__ == "__main__":
-    files = get_files_maestro(Path("/home/zcrank/pan/dev/user_uploads/173cd575-f48f-43a4-98c2-7b9e746ee6fd/0").absolute())
+    files = get_files_maestro(
+        Path(
+            "/home/zcrank/pan/dev/user_uploads/173cd575-f48f-43a4-98c2-7b9e746ee6fd/0"
+        ).absolute()
+    )
     if files is None:
         print("Couldn't find necesarry files!")
         sys.exit(1)
@@ -272,21 +286,21 @@ if __name__ == "__main__":
         sys.exit(1)
     residue_info = get_residues_extended(ident)
     print(residue_info)
-    
+
     # get_pdb(files.topology, files.trajectory, outfile=NUMBERED_PATH.absolute())
     # get_numbering(NUMBERED_PATH, outfile=Path("./numbered_out.pdb"))
     # out = create_translation_dict(Path("./numbered_out.pdb"))
     # print(out)
-   #  sequence = get_sequence(NUMBERED_PATH)
-   #  aa_seq = ""
-   #  for seq, res in sequence:
-   #     aa_seq += res
-   #  print(aa_seq)
-   #  gpcrdb_num = get_residues_extended("4dkl")
-   #  if gpcrdb_num is None:
-   #      print("Something went wrong with GPCRDB call!!")
-   #      sys.exit(1)
-   #  aa_seq_gpcrdb = ""
-   #  for res_info in gpcrdb_num:
-   #      aa_seq_gpcrdb += res_info["amino_acid"]
-   #  print(aa_seq_gpcrdb)
+#  sequence = get_sequence(NUMBERED_PATH)
+#  aa_seq = ""
+#  for seq, res in sequence:
+#     aa_seq += res
+#  print(aa_seq)
+#  gpcrdb_num = get_residues_extended("4dkl")
+#  if gpcrdb_num is None:
+#      print("Something went wrong with GPCRDB call!!")
+#      sys.exit(1)
+#  aa_seq_gpcrdb = ""
+#  for res_info in gpcrdb_num:
+#      aa_seq_gpcrdb += res_info["amino_acid"]
+#  print(aa_seq_gpcrdb)

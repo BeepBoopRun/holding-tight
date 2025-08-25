@@ -22,18 +22,20 @@ Please submit your data below:
     <p class="mt-4 mb-2">
     Additional options:
     </p>
-    <label class="border rounded-lg p-2">
-    Email when finished:
-    {% render_field details_form.email class="bg-gray-300 border" %}
-    </label>
-    <label class="border rounded-lg p-2 ml-2">
-    Specify value name:
-    {% render_field details_form.name_VOI class="bg-gray-300 border" placeholder="Enter name (optional)"%}
-    </label>
-    <label class="p-2 rounded-lg border bg-gray-300 cursor-pointer m-2">
-    Compare by residue number
-    {% render_field details_form.use_common_numbering class="text-xl" %}
-    </label>
+    <div class="flex flex-wrap items-stretch"> 
+	<label class="border rounded-lg p-2 m-1 items-center">
+	    Email when finished:
+	    {% render_field details_form.email class="bg-gray-300 border rounded-sm" %}
+	</label>
+	<label class="border rounded-lg p-2 m-1 items-center">
+	    Specify value name:
+	    {% render_field details_form.name_VOI class="bg-gray-300 border rounded-sm px-2" placeholder="Enter name (optional)"%}
+	</label>
+	<label class="p-2 rounded-lg border bg-gray-300 cursor-pointer m-1 items-center">
+	    Compare by residue number
+	    {% render_field details_form.use_common_numbering class="text-xl" %}
+	</label>
+    </div>
     <p class="my-2">
     NOTE: By default, to compare different receptors/structures we use GPCRdb's numbering. 
     </p>
@@ -48,4 +50,5 @@ Please submit your data below:
     </p>
 </details>
 <p class="mt-2 text-xl">Please cite as...(TBD)</p>
+<p class="mt-2 text-xl">Some info about citing GPCRdb, GetContacts, NCBI's BLAST?</p>
 {% endblock %}

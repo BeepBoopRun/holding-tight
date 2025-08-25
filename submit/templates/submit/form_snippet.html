@@ -1,6 +1,6 @@
 {% load widget_tweaks %}
 
-<div class="entry border rounded-lg h-fit max-w-11/12 my-1 flex w-fit">
+<div class="entry border rounded-lg my-1 inline-flex flex-wrap">
     {{ form.non_errors }}
     {% render_field form.name class="p-2 m-2 bg-gray-300 border rounded-lg" placeholder="Run name (optional)" %}
     {% render_field form.value class="p-2 m-2 bg-gray-300 border rounded-lg max-w-38" placeholder="Enter value" %}
