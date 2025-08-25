@@ -20,7 +20,7 @@ if not receptor_fasta_filepath.is_file():
     with open(receptor_fasta_filepath, 'w') as f_fasta:
         with open(receptor_json_filepath, 'r') as f_json:
             for receptor in json.loads(f_json.read()):
-                f_fasta.write(f">{receptor["accession"]}\n{receptor["sequence"]}\n")
+                f_fasta.write(f">{receptor["accession"]}|{receptor["entry_name"]}\n{receptor["sequence"]}\n")
 else:
     print("Receptor fasta file already exists, using available file...")
 
