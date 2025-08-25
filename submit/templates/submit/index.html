@@ -5,15 +5,9 @@
 <script src="{% static 'submit/reactive.js' %}"> </script>
 {% endblock %}
 
-{% block content2 %}
-<p class="mt-2 text-xl">
-How it works?
-</p>
-<p>
-Provide a value of interest for each of the simulations, we will check if there is a relation between the contacts patterns and given values.
-</p>
-<h4 class="my-4">
-Please submit your files and values below:
+{% block content %}
+<h4 class="my-4 text-xl">
+Please submit your data below:
 </h4>
 <form id="input-form" action="/submit/form" method="post" enctype="multipart/form-data">
     {% csrf_token %}
@@ -25,26 +19,33 @@ Please submit your files and values below:
 	<button type="button" onclick="addFiles()" class="m-1 p-2 cursor-pointer">Add additional files</button>
     </div>
     <button type="submit" class="bg-green-300 border rounded-lg p-2 cursor-pointer">Submit</button>
-    <p class="mt-2 mb-2">
+    <p class="mt-4 mb-2">
     Additional options:
     </p>
     <label class="border rounded-lg p-2">
     Email when finished:
-    {% render_field details_form.email_field class="bg-gray-300 border" placeholder="Enter email"%}
+    {% render_field details_form.email class="bg-gray-300 border" %}
     </label>
     <label class="border rounded-lg p-2 ml-2">
-    Specify name for VOI:
-    {% render_field details_form.name_VOI class="bg-gray-300 border" placeholder="Enter name"%}
+    Specify value name:
+    {% render_field details_form.name_VOI class="bg-gray-300 border" placeholder="Enter name (optional)"%}
     </label>
     <label class="p-2 rounded-lg border bg-gray-300 cursor-pointer m-2">
-    Use GPCRdb numbering
+    Compare by residue number
     {% render_field details_form.use_common_numbering class="text-xl" %}
     </label>
-    <p class="mt-2">
-    Note: By using a common num
+    <p class="my-2">
+    NOTE: By default, to compare different receptors/structures we use GPCRdb's numbering. 
     </p>
     <div id="file-input-template" class="hidden">
 	{{ formset.empty_form}}
     </div>
 </form>
+<details open class="mt-4 text-xl rounded-lg border-dotted border p-2 bg-gray-300 cursor-pointer">
+    <summary>How it works?</summary>
+    <p class="font-medium text-sm">
+    Tool works by comparing interaction patterns between supplied simulations, trying to find which interactions correlate most with change in value e.g. residence time. TODO: Writing is difficult.
+    </p>
+</details>
+<p class="mt-2 text-xl">Please cite as...(TBD)</p>
 {% endblock %}

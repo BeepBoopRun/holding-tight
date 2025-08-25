@@ -1,4 +1,9 @@
-# Main info
+# Installation
+Start by cloning the repository:
+
+```bash
+git clone --recursive https://github.com/BeepBoopRun/holding-tight
+```
 
 To get the server running ASAP, do:
 

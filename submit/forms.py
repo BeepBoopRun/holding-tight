@@ -31,7 +31,7 @@ class FileInputForm(forms.Form):
     choice = forms.ChoiceField(
         choices=[
             ("TopTrjPair", "Topology and trajectory files"),
-            ("MaestroDir", "Maestro Directory"),
+            ("MaestroDir", "Maestro directory"),
         ]
     )
     file = MultipleFileField()

@@ -1,6 +1,6 @@
 {% load static tailwind_tags %}
 <!DOCTYPE html>
-<html lang="en" class="w-screen min-h-screen overflow-y-auto overflow-x-hidden">
+<html lang="en">
     <head>
 	<title>CORAL-MD</title>
 	<meta charset="UTF-8">
@@ -10,38 +10,37 @@
 	{% block extra_headers %}
 	{% endblock %}
     </head>
+    <body class="text-black bg-white font-mono w-screen min-h-screen overflow-x-hidden">
+	<!-- Firefox Flash Of Unstyled Content Fix -->
+	<script>0</script>
+	<nav id="topnav" class="top-0 z-30 bg-indigo-400 border-b px-32 py-2 w-screen ">
+	    <ul class="flex font-medium m-2 items-center">
+		<li class="">
+		    <a href="/" class="m-0 p-0 text-xl font-thin">
+			(logo here) CORAL-MD	
+		    </a>
+		</li>
+		<li class="ml-auto">
+		    <a href="/submit/" class="m-2 items-center px-2 p-2 text-gray-900 rounded-lg ring-2 ring-purple-900 bg-indigo-400 hover:bg-indigo-500 group">
+			Submit
+		    </a>
+		</li>
+		<li class="">
+		    <a href="/search/" class="m-2 px-2 items-center p-2 text-gray-900 rounded-lg ring-2 ring-purple-900 bg-indigo-400 hover:bg-indigo-500 group">
+			Search
+		    </a>
+		</li>
+		<li class="">
+		    <a href="/about" class="m-2 px-2 items-center p-2 text-gray-900 rounded-lg ring-2 ring-purple-900 bg-indigo-400 hover:bg-indigo-500 group">
+			About
+		    </a>
+		</li>
+	    </ul>
 
-    <body class="text-black bg-gray-100 font-mono w-screen min-h-screen overflow-y-auto overflow-x-hidden m-0">
-	<div id="sidebar" class="fixed top-0 left-0 z-40 w-64 h-dvh" >
-	    {% block sidebar %}
-	    <aside id="default-sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen" aria-label="Sidebar">
-		<div class="h-full px-3 py-10 overflow-y-auto bg-indigo-300">
-		    <ul class="space-y-3 font-medium">
-			<li>
-			    <a href="/submit/" class="flex items-center p-2 text-gray-900 rounded-lg ring-2 ring-purple-900 bg-indigo-400 hover:bg-indigo-500 group">
-				<span class="flex-1 ms-3 whitespace-nowrap">Submit</span>
-			    </a>
-			</li>
-			<li>
-			    <a href="/search/" class="flex items-center p-2 text-gray-900 rounded-lg ring-2 ring-purple-900 bg-indigo-400 hover:bg-indigo-500 group">
-				<span class="flex-1 ms-3 whitespace-nowrap">Search</span>
-			    </a>
-			</li>
-			<li>
-			    <a href="/about" class="flex items-center p-2 text-gray-900 rounded-lg ring-2 ring-purple-900 bg-indigo-400 hover:bg-indigo-500 group">
-				<span class="flex-1 ms-3 whitespace-nowrap">About</span>
-			    </a>
-			</li>
-		</div>
-	    </aside>
-	    {% endblock %}
-	</div>
-	<div class="ml-72 mt-8">
-	    <section class="min-h-screen">
-		<h1 class="text-3xl">CORAL-MD: Correlational Analysis of Ligand-Protein interactions</h1>
+	</nav>
+	<div class="">
+	    <section class="min-h-screen pt-2 pb-6 mx-32 bg-gray-200 p-8 border-x border-dotted border-indigo-700">
 		{% block content%}
-		{% endblock %}
-		{% block content2%}
 		{% endblock %}
 	    </section>
 	</div>

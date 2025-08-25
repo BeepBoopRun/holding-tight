@@ -50,9 +50,6 @@ def form(request):
             name_VOI=name_VOI,
         )
         verified_submission = True
-
-        print(submission, flush=True)
-
         try:
             for idx, form in enumerate(formset):
                 if not form.is_valid():
