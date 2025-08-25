@@ -33,7 +33,7 @@ Please submit your data below:
 	</label>
 	<label class="p-2 rounded-lg border bg-gray-300 cursor-pointer m-1 items-center">
 	    Compare by residue number
-	    {% render_field details_form.use_common_numbering class="text-xl" %}
+	    {% render_field details_form.compare_by_residue class="text-xl" %}
 	</label>
     </div>
     <p class="my-2">
@@ -46,7 +46,7 @@ Please submit your data below:
 <details open class="mt-4 text-xl rounded-lg border-dotted border p-2 bg-gray-300 cursor-pointer">
     <summary>How it works?</summary>
     <p class="font-medium text-sm">
-    Tool works by comparing interaction patterns between supplied simulations, trying to find which interactions correlate most with change in value e.g. residence time. TODO: Writing is difficult.
+    Tool works by comparing interaction patterns between supplied simulations, trying to find which interactions correlate most with change in value e.g. residence time. TODO: Add better explanation... Writing is difficult.
     </p>
 </details>
 <p class="mt-2 text-xl">Please cite as...(TBD)</p>

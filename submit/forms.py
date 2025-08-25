@@ -43,7 +43,7 @@ class FileInputForm(forms.Form):
 
 class InputDetails(forms.Form):
     email = forms.EmailField(required=False)
-    use_common_numbering = forms.BooleanField(required=False)
+    compare_by_residue = forms.BooleanField(required=False)
     name_VOI = forms.CharField(required=False)
 
 

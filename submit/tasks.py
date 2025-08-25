@@ -1,9 +1,10 @@
 from pathlib import Path
+from re import sub
 
 from django.utils import timezone
 from django.conf import settings
 from huey.contrib.djhuey import db_task
-from .models import Submission
+from .models import Submission, SubmissionTask
 
 from .contacts import (
     get_files_maestro,
@@ -13,10 +14,9 @@ from .contacts import (
     get_pdb,
 )
 
-from huey.contrib.djhuey import task
 
-
-def analyse_submission(submission: Submission):
+def find_interactions(submission: Submission):
+    print(submission, flush=True)
     sub_id = str(submission.id)
     sub_path = Path(settings.MEDIA_ROOT).joinpath(sub_id)
     results_dir = sub_path.joinpath("results")
@@ -52,7 +52,7 @@ def analyse_submission(submission: Submission):
     submission.save()
 
 
-def prepare_numbering(submission: Submission):
+def prepare_numbering_pdb(submission: Submission):
     sub_id = str(submission.id)
     sub_path = Path(settings.MEDIA_ROOT).joinpath(sub_id)
     results_dir = sub_path.joinpath("results")
@@ -88,12 +88,42 @@ def prepare_numbering(submission: Submission):
         )
     print("ALL PDB'S NUMBERED!", flush=True)
 
+def queue_task(submission: Submission, task_type: SubmissionTask.TaskType):
+    task = SubmissionTask.objects.create(submission=submission, status="P", task_type=task_type)
+    if task_type == SubmissionTask.TaskType.INTERACTIONS:
+        queue_interactions(task)
+    elif task_type == SubmissionTask.TaskType.NUMBERING:
+        queue_numbering(task)
+    else: 
+        # unreachable
+        assert False
+
+
+# could be written better to make less db calls
 
 @db_task()
-def queue_submission(submission: Submission):
-    analyse_submission(submission)
+def queue_interactions(task: SubmissionTask):
+    task.status = "R"
+    task.save()
+    try:
+        find_interactions(task.submission)
+    except:
+        task.status = "F"
+        task.save()
+        return
+    task.status = "S"
+    task.save()
+    
 
-
-@task()
-def queue_numbering(submission: Submission):
-    prepare_numbering(submission)
+@db_task()
+def queue_numbering(task: SubmissionTask):
+    task.status = "R"
+    task.save()
+    try:
+        prepare_numbering_pdb(task.submission)
+    except:
+        task.status = "F"
+        task.save()
+        return
+    task.status = "S"
+    task.save()

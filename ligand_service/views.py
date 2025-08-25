@@ -7,7 +7,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.conf import settings
 
-from submit.models import Submission
+from submit.models import Submission, SubmissionTask
 from .tables import ContactsTable, ContactsTableNumbered
 
 from submit.contacts import create_translation_dict
@@ -36,11 +36,12 @@ def search(request, job_id):
             {"status": "Job ID does not exist!", "job_id": job_id},
         )
 
-    if submission.finished_at is None:
+    tasks = SubmissionTask.objects.filter(submission=submission)
+    if not all([task.status == SubmissionTask.TaskStatus.SUCCESS for task in tasks]):
         return render(
             request,
             "ligand_service/search.html",
-            {"status": "Ongoing", "job_id": job_id},
+            {"status": "Ongoing", "job_id": job_id, "tasks": tasks},
         )
 
     sub_id = str(submission.id)

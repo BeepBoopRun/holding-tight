@@ -23,3 +23,18 @@ class SubmittedForm(models.Model):
         ("T", "TopTrjPair"),
     )
     file_input = models.CharField(max_length=1, choices=FILE_INPUT_TYPES)
+
+class SubmissionTask(models.Model):
+    submission = models.ForeignKey(Submission, on_delete=models.CASCADE)
+    class TaskStatus(models.TextChoices):
+        PENDING = "P", "Pending"
+        RUNNING = "R", "Running"
+        FAILED = "F", "Failed"
+        SUCCESS = "S", "Success"
+    status = models.CharField(max_length=1, choices=TaskStatus)
+
+    class TaskType(models.TextChoices):
+        NUMBERING = "N", "Numbering"
+        INTERACTIONS = "I", "Calculating interactions"
+    task_type = models.CharField(max_length=1, choices=TaskType)
+

@@ -3,8 +3,8 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.conf import settings
 
 from .forms import FileInputFormSet, InputDetails
-from .models import Submission, SubmittedForm
-from .tasks import queue_numbering, queue_submission
+from .models import Submission, SubmittedForm, SubmissionTask
+from .tasks import queue_task 
 
 from pathlib import Path
 import uuid
@@ -24,19 +24,18 @@ def handle_uploaded_file(file_handle, path_to_save_location: Path):
         for chunk in file_handle.chunks():
             destination.write(chunk)
 
-
 def form(request):
     if request.method == "POST":
         formset = FileInputFormSet(request.POST, request.FILES, prefix="submit")
         details_form = InputDetails(request.POST)
 
         user_email = None
-        use_common_numbering = None
+        compare_by_residue= None
         name_VOI = None
 
         if details_form.is_valid():
             user_email = details_form.cleaned_data["email"]
-            use_common_numbering = details_form.cleaned_data["use_common_numbering"]
+            compare_by_residue = details_form.cleaned_data["compare_by_residue"]
             name_VOI = details_form.cleaned_data["name_VOI"]
 
         submission_id = uuid.uuid4()
@@ -46,7 +45,7 @@ def form(request):
         submission = Submission.objects.create(
             id=submission_id,
             email=user_email,
-            common_numbering=use_common_numbering,
+            common_numbering=(not compare_by_residue),
             name_VOI=name_VOI,
         )
         verified_submission = True
@@ -109,10 +108,10 @@ def form(request):
         print("Method other than POST", flush=True)
     print(submission, flush=True)
     submission.save()
-    queue_submission(submission)
+    queue_task(submission, task_type=SubmissionTask.TaskType.INTERACTIONS)
 
-    if use_common_numbering is True:
-        queue_numbering(submission)
+    if compare_by_residue is not True:
+        queue_task(submission, task_type=SubmissionTask.TaskType.NUMBERING)
 
     return HttpResponseRedirect(f"/search/{submission_id}")
 
