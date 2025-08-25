@@ -45,16 +45,16 @@ THREE_TO_ONE = {
     "UNK": "X",
 }
 
-def get_accession_number(seq: str) -> str | None:
+def get_uniprot_identifier(seq: str) -> str | None:
     job = sb.run([BLASTP_PATH, "-query", "-", "-db", BLASTDB_PATH, "-max_target_seqs", "1"], capture_output=True, input=seq.encode())
     if job.returncode != 0:
         print(f"Getting accession number failed! Input: {seq}")
         return None
     for line in job.stdout.decode().splitlines():
         if line.startswith(">"):
-            print(line.strip()[1:])
-    return job.stdout.decode()
-    
+            return line.strip()[1:].split("|")[1]
+    return None
+
 def filetype(file: Path) -> str:
     filetype = file.suffix[1:]
     if filetype == "cms":
@@ -184,10 +184,14 @@ def get_numbering(pdb_file: Path, outfile: Path):
         )
 
 
-def get_residues_extended(uniprot_identifier: str):
-    response = requests.post(GPCRDB_RESIDUES_EXTENDED_ENDPOINT + uniprot_identifier)
+def get_residues_extended(uniprot_identifier: str) -> str|None:
+    url = GPCRDB_RESIDUES_EXTENDED_ENDPOINT + uniprot_identifier
+    print(url)
+    response = requests.post(url)
+    print(response)
     if response.ok:
         return response.json()
+    return None
 
 
 def create_translation_dict(
@@ -257,12 +261,17 @@ def get_sequence(pdb: Path):
 
 
 if __name__ == "__main__":
-    files = get_files_maestro(Path("../user_uploads/40aef683-9676-4525-b543-12b83a1eca76/0").absolute())
+    files = get_files_maestro(Path("/home/zcrank/pan/dev/user_uploads/173cd575-f48f-43a4-98c2-7b9e746ee6fd/0").absolute())
     if files is None:
         print("Couldn't find necesarry files!")
         sys.exit(1)
     seq = get_sequence2(files.topology, files.trajectory)
-    accession = get_accession_number(seq)
+    ident = get_uniprot_identifier(seq)
+    if ident is None:
+        print("Couldn't identify the structure!")
+        sys.exit(1)
+    residue_info = get_residues_extended(ident)
+    print(residue_info)
     
     # get_pdb(files.topology, files.trajectory, outfile=NUMBERED_PATH.absolute())
     # get_numbering(NUMBERED_PATH, outfile=Path("./numbered_out.pdb"))
