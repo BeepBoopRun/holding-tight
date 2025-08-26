@@ -1,4 +1,5 @@
 {% load static tailwind_tags %}
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -7,13 +8,14 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta http-equiv="X-UA-Compatible" content="ie=edge">
 	{% tailwind_css %}
+	<link rel="stylesheet" href="{% static 'ligand_service/style.css' %}">
 	{% block extra_headers %}
 	{% endblock %}
     </head>
-    <body class="text-black bg-white font-mono w-screen min-h-screen overflow-x-hidden">
+    <body class="text-black font-mono w-screen min-h-screen overflow-x-hidden">
 	<!-- Firefox Flash Of Unstyled Content Fix -->
 	<script>0</script>
-	<nav id="topnav" class="top-0 z-30 bg-indigo-400 border-b lg:px-32 py-2 w-screen ">
+	<nav id="topnav" class="top-0 z-30 bg-indigo-400  border-b lg:px-32 py-2 w-screen opacity-85">
 	    <ul class="flex font-medium m-2 items-center">
 		<li class="">
 		    <a href="/" class="m-0 p-0 text-xl font-thin">
@@ -39,7 +41,7 @@
 
 	</nav>
 	<div class="">
-	    <section class="min-h-screen pt-2 pb-6 lg:mx-32 bg-gray-200 p-8 border-x border-dotted border-indigo-700">
+	    <section class="min-h-screen pt-2 pb-6 lg:mx-32 bg-gray-200 p-8 opacity-85 border-x border-dotted border-indigo-700">
 		{% block content%}
 		{% endblock %}
 	    </section>
