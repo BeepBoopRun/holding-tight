@@ -15,7 +15,6 @@ This method also cleans after itself!
 
 To build normally, do:
 ```bash
-./blast/prepare_blast.sh
 docker build .
 docker run -it -p 8000:8000 [IMAGE ID] 
 ```
@@ -29,9 +28,8 @@ Notice that this website is still a work in progress and doesn't represent the f
 
 # What might change
 
-- Static files are served using whitenoise, might change that to nginx.
-
 - Databases are stored inside the containers, which I am unsure of. They will contain cached results from calling GPCRdb, so it might be better to do something different.
 
+- No restart mechanism after crash, dangerous!
 
 

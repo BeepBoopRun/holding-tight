@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% load static %}
+{% block extra_headers %}
+<script src="{% static 'ligand_service/refresh.js' %}"> </script>
+{% endblock %}
+
+
+{% block content %}
+
+<h4 class="mt-4 text-xl">
+    Job ID: {{ job_id }}
+</h4>
+<p class="text-2xl mt-4">
+Status: Ongoing...
+</p>
+
+{% for task in tasks %}
+<p>{{ task.get_task_type_display }} - {{ task.get_status_display }}</p>
+{% empty %}
+<p>No tasks found.</p>
+{% endfor %}
+
+{% endblock %}

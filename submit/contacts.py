@@ -4,7 +4,6 @@ import os
 import subprocess as sb
 from pathlib import Path
 from typing import NamedTuple
-import subprocess as sb
 
 from vmd import molecule, atomsel
 

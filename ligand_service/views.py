@@ -2,7 +2,6 @@ from pathlib import Path
 import csv
 import uuid
 
-from django.db.models import ObjectDoesNotExist
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.conf import settings
@@ -29,7 +28,7 @@ def search(request, job_id):
     try:
         job_id = uuid.UUID(job_id)
         submission = Submission.objects.get(id=job_id)
-    except:
+    except Exception:
         return render(
             request,
             "ligand_service/search.html",
@@ -40,8 +39,8 @@ def search(request, job_id):
     if not all([task.status == SubmissionTask.TaskStatus.SUCCESS for task in tasks]):
         return render(
             request,
-            "ligand_service/search.html",
-            {"status": "Ongoing", "job_id": job_id, "tasks": tasks},
+            "ligand_service/search_ongoing.html",
+            {"job_id": job_id, "tasks": tasks},
         )
 
     sub_id = str(submission.id)
@@ -100,9 +99,8 @@ def search(request, job_id):
 
     return render(
         request,
-        "ligand_service/search.html",
+        "ligand_service/search_found.html",
         {
-            "status": "Success",
             "job_id": job_id,
             "data": data,
             "name_VOI": submission.name_VOI,

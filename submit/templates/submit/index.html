@@ -15,10 +15,15 @@ Please submit your data below:
     {% for form in formset %}
     {{ form }}
     {% endfor %}
-    <div id="add-more-btn" class="border rounded-lg w-fit h-fit my-2 bg-gray-300">
+    <div id="add-more-btn" class="border rounded-lg w-fit h-fit my-2 bg-gray-300 hover:bg-gray-400">
 	<button type="button" onclick="addFiles()" class="m-1 p-2 cursor-pointer">Add additional files</button>
     </div>
-    <button type="submit" class="bg-green-300 border rounded-lg p-2 cursor-pointer">Submit</button>
+    <button type="submit" class="bg-green-300 hover:bg-green-400 border rounded-lg p-2 cursor-pointer ">Submit</button>
+    <div id="progress-bar-container" class="invisible inline-flex items-center gap-2 rounded-lg border p-2">
+	<label for="progress-bar">Submission progress:</label>
+	<progress id="progress-bar" max="100" value="0" class="bg-gray-300 border align-middle"></progress>
+	<p id="progress-bar-counter">0%</p>
+    </div>
     <p class="mt-4 mb-2">
     Additional options:
     </p>
@@ -29,7 +34,7 @@ Please submit your data below:
 	</label>
 	<label class="border rounded-lg p-2 m-1 items-center">
 	    Specify value name:
-	    {% render_field details_form.name_VOI class="bg-gray-300 border rounded-sm px-2" placeholder="Enter name (optional)"%}
+	    {% render_field details_form.name_VOI class="bg-gray-300  hover:bg-gray-350 border rounded-sm px-2" placeholder="Enter name (optional)"%}
 	</label>
 	<label class="p-2 rounded-lg border bg-gray-300 cursor-pointer m-1 items-center">
 	    Compare by residue number
@@ -44,8 +49,8 @@ Please submit your data below:
     </div>
 </form>
 <details open class="mt-4 text-xl rounded-lg border-dotted border p-2 bg-gray-300 cursor-pointer">
-    <summary>How it works?</summary>
-    <p class="font-medium text-sm">
+    <summary class="text-2xl">How it works?</summary>
+    <p class="font-medium text-lg">
     Tool works by comparing interaction patterns between supplied simulations, trying to find which interactions correlate most with change in value e.g. residence time. TODO: Add better explanation... Writing is difficult.
     </p>
 </details>

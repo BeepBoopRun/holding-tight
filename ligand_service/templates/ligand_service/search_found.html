@@ -7,20 +7,9 @@
     Job ID: {{ job_id }}
 </h4>
 <p class="text-2xl mt-4">
-Status: {{ status }}
+Status: Complete!
 </p>
 
-{% if status == "Ongoing" %}
-
-{% for task in tasks %}
-<p>{{ task.get_task_type_display }} - {{ task.get_status_display }}</p>
-{% empty %}
-<p>No tasks found.</p>
-{% endfor %}
-
-{% endif %}
-
-{% if status == "Success" %}
 <h4 class="text-2xl mt-4">
     Run details:
 </h4>
@@ -37,6 +26,5 @@ Status: {{ status }}
     </div>
     {% endfor %}
 </div>
-{% endif %}
 
 {% endblock %}

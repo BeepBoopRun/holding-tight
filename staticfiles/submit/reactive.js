@@ -6,13 +6,44 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const formset_handler = document.getElementById('id_submit-TOTAL_FORMS');
     formset_handler.value = 1;
+
+
+    const form = document.getElementById("input-form");
+    const progressBar = document.getElementById("progress-bar");
+    const progressBarContainer = document.getElementById("progress-bar-container"); 
+    const progressBarCounter = document.getElementById("progress-bar-counter"); 
+
+
+    form.addEventListener("submit", function (e) {
+	e.preventDefault();
+	progressBarContainer.classList.remove("invisible");
+
+	const xhr = new XMLHttpRequest();
+	const formData = new FormData(form);
+
+	xhr.upload.addEventListener("progress", function (event) {
+	    if (event.lengthComputable) {
+		const percent = Math.round((event.loaded / event.total) * 100);
+		progressBar.value = percent;
+		progressBarCounter.textContent = percent + '%';
+	    }
+	});
+
+	xhr.addEventListener("load", function () {
+	    console.log("Sending complete!");
+	    window.location.href = xhr.responseURL;
+	});
+
+	xhr.open("POST", "/submit/form");
+	xhr.send(formData);
+    });
 });
 
 let nextFileFormID = 1
 
 function updateFormsetIDs(containingElement, newID) {
     const re = /submit-\d+|submit-__prefix__/
-    const replaceText = `submit-${newID}` 
+	const replaceText = `submit-${newID}` 
     const allDescendants = containingElement.querySelectorAll("*")
     for (const desc of allDescendants) {
 	if(desc.id) {
@@ -48,7 +79,7 @@ function deleteThisFileForm() {
     event.target.closest('.entry').remove();
 
     // contains buttons as well!!
-    const form = document.getElementById('input-form')
+	const form = document.getElementById('input-form')
     console.log(form)
     let allFileForms = Array.from(form.children).filter(child =>
 	child.classList.contains('entry')
@@ -72,9 +103,9 @@ function handleChangedFileType() {
 
     let newLabelText = undefined; 
     // changing html attributes to match input type,
-    // (maestro -> webkitdir), (toptrj -> multiple files)
+	// (maestro -> webkitdir), (toptrj -> multiple files)
     //
-    // changing label text as well
+	// changing label text as well
     if(currentOption === "MaestroDir") {
 	newLabelText = "Upload Maestro results directory...";
 	fileInput.removeAttribute("multiple");
@@ -113,7 +144,7 @@ function handleNewFiles() {
 	const dt = new DataTransfer();
 	// we need to replace FileList object to remove
 	// deduplicate file names...
-	let i = 0
+	    let i = 0
 	for (const file of fileInput.files) {
 	    const filePath = file.webkitRelativePath;
 	    const prefixedFileName = `BROWSER_PREFIX${i}_${file.name}`;
@@ -138,3 +169,5 @@ function handleNewFiles() {
 	}
     }
 }
+
+

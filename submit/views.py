@@ -4,7 +4,7 @@ from django.conf import settings
 
 from .forms import FileInputFormSet, InputDetails
 from .models import Submission, SubmittedForm, SubmissionTask
-from .tasks import queue_task 
+from .tasks import queue_task
 
 from pathlib import Path
 import uuid
@@ -24,13 +24,14 @@ def handle_uploaded_file(file_handle, path_to_save_location: Path):
         for chunk in file_handle.chunks():
             destination.write(chunk)
 
+
 def form(request):
     if request.method == "POST":
         formset = FileInputFormSet(request.POST, request.FILES, prefix="submit")
         details_form = InputDetails(request.POST)
 
         user_email = None
-        compare_by_residue= None
+        compare_by_residue = None
         name_VOI = None
 
         if details_form.is_valid():

@@ -9,5 +9,9 @@
 	{% render_field form.file class="file-input hidden" onchange="handleNewFiles()" %}
     </label>
     {% render_field form.paths class+="file-paths hidden" %}
-    <button type="button" onclick="deleteThisFileForm()" class="cursor-pointer py-1 px-2 m-2 border rounded-lg bg-gray-300 ">❌</button>
+    <button type="button" onclick="deleteThisFileForm()" class="cursor-pointer py-1 px-2 m-2 border rounded-lg bg-red-300 hover:bg-red-400">
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+	    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+	</svg>
+    </button>
 </div> 

@@ -1,5 +1,4 @@
 from pathlib import Path
-from re import sub
 
 from django.utils import timezone
 from django.conf import settings
@@ -88,32 +87,34 @@ def prepare_numbering_pdb(submission: Submission):
         )
     print("ALL PDB'S NUMBERED!", flush=True)
 
+
 def queue_task(submission: Submission, task_type: SubmissionTask.TaskType):
-    task = SubmissionTask.objects.create(submission=submission, status="P", task_type=task_type)
+    task = SubmissionTask.objects.create(
+        submission=submission, status="P", task_type=task_type
+    )
     if task_type == SubmissionTask.TaskType.INTERACTIONS:
         queue_interactions(task)
     elif task_type == SubmissionTask.TaskType.NUMBERING:
         queue_numbering(task)
-    else: 
+    else:
         # unreachable
         assert False
 
 
 # could be written better to make less db calls
-
 @db_task()
 def queue_interactions(task: SubmissionTask):
     task.status = "R"
     task.save()
     try:
         find_interactions(task.submission)
-    except:
+    except Exception:
         task.status = "F"
         task.save()
         return
     task.status = "S"
     task.save()
-    
+
 
 @db_task()
 def queue_numbering(task: SubmissionTask):
@@ -121,7 +122,7 @@ def queue_numbering(task: SubmissionTask):
     task.save()
     try:
         prepare_numbering_pdb(task.submission)
-    except:
+    except Exception:
         task.status = "F"
         task.save()
         return

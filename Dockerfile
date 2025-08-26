@@ -1,5 +1,7 @@
 FROM mambaorg/micromamba:2.3.0
 
+RUN apt-get update && apt-get install wget
+
 COPY --chown=$MAMBA_USER:$MAMBA_USER . /home/$MAMBA_USER/prod
 WORKDIR /home/$MAMBA_USER/prod
 
