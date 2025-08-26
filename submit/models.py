@@ -18,10 +18,10 @@ class SubmittedForm(models.Model):
     value = models.FloatField()
     name = models.CharField(null=True, blank=True, default=None)
 
-    FILE_INPUT_TYPES = (
-        ("M", "MaestroDir"),
-        ("T", "TopTrjPair"),
-    )
+    class FILE_INPUT_TYPES(models.TextChoices):
+        MAESTRO_DIR = "M", "MaestroDir"
+        TOPTRJ_PAIR = "T", "TopTrjPair"
+
     file_input = models.CharField(max_length=1, choices=FILE_INPUT_TYPES)
 
 

@@ -8,7 +8,6 @@ from .tasks import queue_task
 
 from pathlib import Path
 import uuid
-import shutil
 
 
 def index(request):
@@ -49,69 +48,43 @@ def form(request):
             common_numbering=(not compare_by_residue),
             name_VOI=name_VOI,
         )
-        verified_submission = True
-        try:
-            for idx, form in enumerate(formset):
-                if not form.is_valid():
-                    print("INVALID FORM!!".center(20, "-"), flush=True)
-                    print(form.errors, flush=True)
-                    verified_submission = False
-                    break
-
-                form_path = submission_path.joinpath(str(idx))
-                print(f"FORM {idx}")
-
-                if form.cleaned_data["choice"] == "MaestroDir":
-                    SubmittedForm.objects.create(
-                        form_id=idx,
-                        submission=submission,
-                        file_input="M",
-                        value=form.cleaned_data["value"],
-                        name=form.cleaned_data["name"],
-                    ).save()
-                    for file in form.cleaned_data["file"]:
-                        path = form_path.joinpath(
-                            form.cleaned_data["paths"][file.name]
-                        ).parents[0]
-                        path.mkdir(parents=True, exist_ok=True)
-                        filename = "_".join(file.name.split("_")[2:])
-                        handle_uploaded_file(
-                            file_handle=file, path_to_save_location=path / filename
-                        )
-                elif form.cleaned_data["choice"] == "TopTrjPair":
-                    SubmittedForm.objects.create(
-                        form_id=idx,
-                        submission=submission,
-                        file_input="T",
-                        value=form.cleaned_data["value"],
-                        name=form.cleaned_data["name"],
-                    ).save()
-                    for file in form.cleaned_data["file"]:
-                        form_path.mkdir(exist_ok=True)
-                        handle_uploaded_file(
-                            file_handle=file,
-                            path_to_save_location=form_path / file.name,
-                        )
-
-                else:
-                    verified_submission = False
-                    submission.delete()
-                    print(
-                        f"Unsupported file input format used: {form.cleaned_data['choice']}"
+        submission.save()
+        for idx, form in enumerate(formset):
+            if not form.is_valid():
+                print("INVALID FORM!!".center(20, "-"), flush=True)
+                print(form.errors, flush=True)
+                break
+            form_path = submission_path.joinpath(str(idx))
+            print(f"FORM {idx}")
+            if form.cleaned_data["choice"] == "MaestroDir":
+                file_input = SubmittedForm.FILE_INPUT_TYPES.MAESTRO_DIR
+                for file in form.cleaned_data["file"]:
+                    path = form_path.joinpath(
+                        form.cleaned_data["paths"][file.name]
+                    ).parents[0]
+                    path.mkdir(parents=True, exist_ok=True)
+                    filename = "_".join(file.name.split("_")[2:])
+                    handle_uploaded_file(
+                        file_handle=file, path_to_save_location=path / filename
                     )
-                    break
-        finally:
-            if not verified_submission:
-                shutil.rmtree(submission_path)
-                return HttpResponse("Bad request!")
-
-    else:
-        print("Method other than POST", flush=True)
-    print(submission, flush=True)
-    submission.save()
+            elif form.cleaned_data["choice"] == "TopTrjPair":
+                file_input = SubmittedForm.FILE_INPUT_TYPES.TOPTRJ_PAIR
+                for file in form.cleaned_data["file"]:
+                    form_path.mkdir(exist_ok=True)
+                    handle_uploaded_file(
+                        file_handle=file,
+                        path_to_save_location=form_path / file.name,
+                    )
+            SubmittedForm.objects.create(
+                form_id=idx,
+                submission=submission,
+                file_input=file_input,
+                value=form.cleaned_data["value"],
+                name=form.cleaned_data["name"],
+            ).save()
     queue_task(submission, task_type=SubmissionTask.TaskType.INTERACTIONS)
 
-    if compare_by_residue is not True:
+    if not compare_by_residue:
         queue_task(submission, task_type=SubmissionTask.TaskType.NUMBERING)
 
     return HttpResponseRedirect(f"/search/{submission_id}")

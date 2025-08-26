@@ -87,7 +87,6 @@ def prepare_numbering_pdb(submission: Submission):
         )
     print("ALL PDB'S NUMBERED!", flush=True)
 
-
 def queue_task(submission: Submission, task_type: SubmissionTask.TaskType):
     task = SubmissionTask.objects.create(
         submission=submission, status="P", task_type=task_type
@@ -99,7 +98,6 @@ def queue_task(submission: Submission, task_type: SubmissionTask.TaskType):
     else:
         # unreachable
         assert False
-
 
 # could be written better to make less db calls
 @db_task()

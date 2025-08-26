@@ -1,6 +1,7 @@
 FROM mambaorg/micromamba:2.3.0
 
-RUN apt-get update && apt-get install wget
+USER root
+RUN apt-get update && apt-get install --no-install-recommends -y wget
 
 COPY --chown=$MAMBA_USER:$MAMBA_USER . /home/$MAMBA_USER/prod
 WORKDIR /home/$MAMBA_USER/prod
@@ -9,6 +10,7 @@ USER $MAMBA_USER
 RUN micromamba install -y -n base -f ./env.yaml && \
     micromamba clean --all --yes
 
-RUN ./blast/prepare_blast.sh
+ENV ENV_NAME=base
+RUN micromamba run ./blast/prepare_blast.sh
 
-CMD [ "sh", "docker_entrypoint.sh" ]
+CMD ["micromamba", "run", "sh", "docker_entrypoint.sh"]
