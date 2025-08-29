@@ -246,8 +246,7 @@ def create_translation_dict(
 
 def blast_sequence(seq: str) -> Blast.HSP | None:
     print("Starting blast with seq:", seq, flush=True)
-    assert(BLASTDB_PATH.is_file())
-    assert(BLASTDB_PATH.is_file())
+    assert(BLASTP_PATH.is_file())
     results_file = tempfile.NamedTemporaryFile(suffix=".xml")
     job = sb.run(
         [
@@ -270,6 +269,8 @@ def blast_sequence(seq: str) -> Blast.HSP | None:
         print(f"Getting accession number failed!")
         print(f"Stderr: {job.stderr.decode()}", flush=True)
         return None
+    else:
+        print("Blast successful")
     # read the outputfile, return alignment
     blast_record: Blast.Record = Blast.read(results_file)
     for alignments in blast_record:
