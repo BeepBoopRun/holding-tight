@@ -33,3 +33,5 @@ Notice that this website is still a work in progress and doesn't represent the f
 - No restart mechanism after crash, dangerous!
 
 - Cron job to clear submissions older than 30 days.
+
+- Changing whitenoise to nginx, since we might need to serve multiple files.

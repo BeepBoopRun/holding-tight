@@ -9,7 +9,7 @@ from django.conf import settings
 from submit.models import Submission, SubmissionTask
 from .tables import ContactsTable, ContactsTableNumbered
 
-from submit.contacts import create_translation_dict
+from submit.contacts import create_translation_dict, create_translation_dict2, get_files_dir, get_files_maestro
 
 
 def redirect_to_submit(request):
@@ -46,7 +46,6 @@ def search(request, job_id):
     sub_id = str(submission.id)
     results_path = Path(settings.MEDIA_ROOT).joinpath(sub_id, "results")
 
-    print("PREPARING TO SHOW CONTACTS", flush=True)
     data = []
     for form in submission.submittedform_set.all():
         file_id = str(form.form_id)
@@ -71,16 +70,29 @@ def search(request, job_id):
             if submission.common_numbering:
                 dic = create_translation_dict(results_path / f"num_top{file_id}.pdb")
                 for row in raw_table:
-                    print(row, flush=True)
                     for atom in ["atom_1", "atom_2"]:
                         key = tuple(row[atom].split(":")[0:3])
-                        print(key)
                         if key in dic:
-                            print(
-                                f"KEY: {key} IN THE DIC, VALUE: {dic[key]}", flush=True
-                            )
-                            row["numbered_residue"] = dic[key][1]
-                print(dic, flush=True)
+                            row["numbered_residue_pdb"] = dic[key][1]
+                sub_id = str(submission.id)
+                sub_path = Path(settings.MEDIA_ROOT).joinpath(sub_id)
+                dir_id = str(form.form_id)
+                dir_path = Path(sub_path, dir_id)
+                if form.file_input == "M":
+                    files = get_files_maestro(dir_path)
+                elif form.file_input == "T":
+                    files = get_files_dir(dir_path)
+                if files is None:
+                    continue
+                dic = create_translation_dict2(files.topology, files.trajectory)
+                if dic is None:
+                    print("NO TRANSLATION DICT CREATED!", flush=True)
+                    return None
+                for row in raw_table:
+                    for atom in ["atom_1", "atom_2"]:
+                        key = tuple(row[atom].split(":")[0:3])
+                        if key in dic:
+                            row["numbered_residue_api"] = dic[key]
                 table = ContactsTableNumbered(raw_table[0:1000])
             else:
                 table = ContactsTable(raw_table[0:1000])

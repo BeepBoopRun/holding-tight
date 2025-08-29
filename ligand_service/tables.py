@@ -13,7 +13,8 @@ class ContactsTable(tables.Table):
 class ContactsTableNumbered(tables.Table):
     frame = tables.Column()
     interaction_type = tables.Column()
-    numbered_residue = tables.Column()
+    numbered_residue_pdb = tables.Column()
+    numbered_residue_api = tables.Column()
     atom_1 = tables.Column()
     atom_2 = tables.Column()
     atom_3 = tables.Column()

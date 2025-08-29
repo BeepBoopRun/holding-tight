@@ -1,14 +1,17 @@
-import requests
+import io
 import sys
 import os
 import subprocess as sb
 from pathlib import Path
-from typing import NamedTuple
+from typing import Any, NamedTuple
+import tempfile
 
+import requests
 from vmd import molecule, atomsel
+from Bio import Blast
 
-BLASTP_PATH = os.path.abspath("../blast/ncbi-blast-2.17.0+/bin/blastp")
-BLASTDB_PATH = os.path.abspath("../blast/blast_db")
+BLASTP_PATH = os.path.abspath("./blast/ncbi-blast-2.17.0+/bin/blastp")
+BLASTDB_PATH = os.path.abspath("./blast/blast_db")
 
 DYNAMIC_CONTACTS_PATH = os.path.abspath("getcontacts/get_dynamic_contacts.py")
 CURRENT_INTERPRETER_PATH = sys.executable
@@ -44,20 +47,14 @@ THREE_TO_ONE = {
     "UNK": "X",
 }
 
+ONE_TO_THREE = {v: k for k,v in THREE_TO_ONE.items()}
 
-def get_uniprot_identifier(seq: str) -> str | None:
-    job = sb.run(
-        [BLASTP_PATH, "-query", "-", "-db", BLASTDB_PATH, "-max_target_seqs", "1"],
-        capture_output=True,
-        input=seq.encode(),
-    )
-    if job.returncode != 0:
-        print(f"Getting accession number failed! Input: {seq}")
-        return None
-    for line in job.stdout.decode().splitlines():
-        if line.startswith(">"):
-            return line.strip()[1:].split("|")[1]
-    return None
+
+class VMDFiles(NamedTuple):
+    topology: Path
+    trajectory: Path
+
+
 
 
 def filetype(file: Path) -> str:
@@ -68,22 +65,19 @@ def filetype(file: Path) -> str:
     return filetype
 
 
-def get_sequence2(topology_file: Path, trajectory_file: Path) -> str:
+def get_sequence_chains(topology_file: Path, trajectory_file: Path) -> dict[str, dict[int, str]]:
     molid = molecule.load(filetype(topology_file), str(topology_file))
     molecule.read(molid, filetype(trajectory_file), str(trajectory_file))
 
     protein = atomsel("protein", molid=molid)
-    residues = [None] * (max(protein.residue) + 1)
-    for chain, resname, residue_id, atom_name in zip(
-        protein.chain, protein.resname, protein.residue, protein.name
+    structure = {}
+    for chain, resname, residue_id in zip(
+        protein.chain, protein.resname, protein.resid
     ):
-        residues[residue_id] = THREE_TO_ONE.get(resname, "X")
-    return "".join(residues)
-
-
-class VMDFiles(NamedTuple):
-    topology: Path
-    trajectory: Path
+        if chain not in structure:
+            structure[chain] = {}
+        structure[chain][residue_id] = THREE_TO_ONE.get(resname, "X")
+    return structure
 
 
 def get_files_maestro(directory: Path) -> VMDFiles | None:
@@ -165,10 +159,10 @@ def get_interactions(topology_file: Path, trajectory_file: Path, outfile: Path):
     assert process.stdout is not None
 
     for line in process.stdout:
-        print("Output:", line.strip())  # or parse percentage here
+        print("GET CONTACTS:", line.strip())
 
     process.wait()
-    print("Done!")
+    print("GET CONTACTS: Done!")
 
 
 def get_pdb(topology_file: Path, trajectory_file: Path, outfile: Path):
@@ -193,15 +187,12 @@ def get_numbering(pdb_file: Path, outfile: Path):
         )
 
 
-def get_residues_extended(uniprot_identifier: str) -> str | None:
+def get_residues_extended(uniprot_identifier: str) -> list[dict[Any, Any]] | None:
     url = GPCRDB_RESIDUES_EXTENDED_ENDPOINT + uniprot_identifier
-    print(url)
     response = requests.post(url)
-    print(response)
     if response.ok:
         return response.json()
     return None
-
 
 def create_translation_dict(
     numbered_pdb: Path,
@@ -249,6 +240,22 @@ def create_translation_dict(
                     trans_dict[atom_identifier] = [None, GPCRDB_number]
     return trans_dict
 
+def blast_sequence(seq: str) -> Blast.HSP | None:
+    results_file = tempfile.NamedTemporaryFile(suffix=".xml")
+    job = sb.run(
+        [BLASTP_PATH, "-query", "-", "-db", BLASTDB_PATH, "-out", results_file.name, "-outfmt", "5", "-max_target_seqs", "1"],
+        capture_output=True,
+        input=seq.encode(),
+    )
+    if job.returncode != 0:
+        print(f"Getting accession number failed! Input: {seq}")
+        return None
+    # read the outputfile, return alignment
+    blast_record: Blast.Record = Blast.read(results_file)
+    for alignments in blast_record:
+        for alignment in alignments:
+            return alignment
+    return None
 
 def get_sequence(pdb: Path):
     with open(pdb, "r") as f:
@@ -268,23 +275,69 @@ def get_sequence(pdb: Path):
                 sequence.append(res_info)
     return sequence
 
+def extract_uniprot_ident(target_description: str) -> str:
+    return target_description.split("|")[1]
+
+def make_translation_dict_from_alignment(named_atoms: list[tuple[str, str, str]], alignment: Blast.HSP ) -> dict[tuple[str, str, int], list[str]] | None:
+    named_atoms.sort(key=lambda x: int(x[2]))
+    ident = extract_uniprot_ident(alignment.target.description)
+    residue_info = get_residues_extended(ident)
+    if residue_info is None:
+        print("REQUEST FAILED!", flush=True)
+        return None
+    # Alignment object uses 1 based indexing for coordinates, gpcrdb does not!!
+    if alignment.coordinates is None:
+        print("NO COORDINATES IN ALIGNMENT!", flush=True)
+        return None
+
+    # creates a list of tuples, where first element is the start index and second is the end index
+    target_slices = list(zip(alignment.coordinates[0][::2], alignment.coordinates[0][1::2]))
+    query_slices = list(zip(alignment.coordinates[1][::2], alignment.coordinates[1][1::2]))
+
+    result = {}
+    for qs, ts in zip(query_slices, target_slices):
+        keys = named_atoms[qs[0]-1 : qs[1]-1]
+        values = residue_info[ts[0]-1 : ts[1]-1]
+        for k,v in zip(keys,values):
+            value = v.get("display_generic_number", "")
+            result[k] = value if value is not None else ""
+    return result
+
+
+def create_translation_dict2(topology: Path, trajectory: Path) -> dict[tuple[str, str, str], str] | None:
+    print("TRANSLATION DIC 2 CREATOR", flush=True)
+    seq_chains = get_sequence_chains(topology, trajectory)
+    result_dict = {}
+    for chain in seq_chains:
+        seq = "".join([res_name[1] for res_name in sorted(seq_chains[chain].items())])
+        alignment = blast_sequence(seq)
+        if alignment is None:
+            print("FAILED TO GET ALIGNMENT!", flush=True)
+            return None
+        named_atoms = []
+        for idx in seq_chains[chain]:
+            # create (chain, residue_name, residue_idx) triplets
+            named_atoms.append((chain, ONE_TO_THREE[seq_chains[chain][idx]], str(idx)))
+        chain_dict = make_translation_dict_from_alignment(named_atoms, alignment)
+        if chain_dict is None:
+            print("FAILED TO GET CHAIN_DICT!", flush=True)
+            return None
+        # merge results from each chain
+        result_dict = {**result_dict, **chain_dict}
+    return result_dict
+
+
 
 if __name__ == "__main__":
     files = get_files_maestro(
         Path(
-            "/home/zcrank/pan/dev/user_uploads/173cd575-f48f-43a4-98c2-7b9e746ee6fd/0"
+            "/home/zcrank/pan/dev/user_uploads/17a1ed8c-301d-4e61-8073-bd774799e52c"
         ).absolute()
     )
     if files is None:
         print("Couldn't find necesarry files!")
         sys.exit(1)
-    seq = get_sequence2(files.topology, files.trajectory)
-    ident = get_uniprot_identifier(seq)
-    if ident is None:
-        print("Couldn't identify the structure!")
-        sys.exit(1)
-    residue_info = get_residues_extended(ident)
-    print(residue_info)
+    print(create_translation_dict2(files.topology, files.trajectory))
 
     # get_pdb(files.topology, files.trajectory, outfile=NUMBERED_PATH.absolute())
     # get_numbering(NUMBERED_PATH, outfile=Path("./numbered_out.pdb"))
