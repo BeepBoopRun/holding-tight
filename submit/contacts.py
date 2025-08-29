@@ -1,4 +1,3 @@
-import io
 import sys
 import os
 import subprocess as sb
@@ -47,14 +46,12 @@ THREE_TO_ONE = {
     "UNK": "X",
 }
 
-ONE_TO_THREE = {v: k for k,v in THREE_TO_ONE.items()}
+ONE_TO_THREE = {v: k for k, v in THREE_TO_ONE.items()}
 
 
 class VMDFiles(NamedTuple):
     topology: Path
     trajectory: Path
-
-
 
 
 def filetype(file: Path) -> str:
@@ -65,7 +62,9 @@ def filetype(file: Path) -> str:
     return filetype
 
 
-def get_sequence_chains(topology_file: Path, trajectory_file: Path) -> dict[str, dict[int, str]]:
+def get_sequence_chains(
+    topology_file: Path, trajectory_file: Path
+) -> dict[str, dict[int, str]]:
     molid = molecule.load(filetype(topology_file), str(topology_file))
     molecule.read(molid, filetype(trajectory_file), str(trajectory_file))
 
@@ -194,6 +193,7 @@ def get_residues_extended(uniprot_identifier: str) -> list[dict[Any, Any]] | Non
         return response.json()
     return None
 
+
 def create_translation_dict(
     numbered_pdb: Path,
 ) -> dict[tuple[str, str, str], list[str]]:
@@ -240,10 +240,23 @@ def create_translation_dict(
                     trans_dict[atom_identifier] = [None, GPCRDB_number]
     return trans_dict
 
+
 def blast_sequence(seq: str) -> Blast.HSP | None:
     results_file = tempfile.NamedTemporaryFile(suffix=".xml")
     job = sb.run(
-        [BLASTP_PATH, "-query", "-", "-db", BLASTDB_PATH, "-out", results_file.name, "-outfmt", "5", "-max_target_seqs", "1"],
+        [
+            BLASTP_PATH,
+            "-query",
+            "-",
+            "-db",
+            BLASTDB_PATH,
+            "-out",
+            results_file.name,
+            "-outfmt",
+            "5",
+            "-max_target_seqs",
+            "1",
+        ],
         capture_output=True,
         input=seq.encode(),
     )
@@ -256,6 +269,7 @@ def blast_sequence(seq: str) -> Blast.HSP | None:
         for alignment in alignments:
             return alignment
     return None
+
 
 def get_sequence(pdb: Path):
     with open(pdb, "r") as f:
@@ -275,10 +289,14 @@ def get_sequence(pdb: Path):
                 sequence.append(res_info)
     return sequence
 
+
 def extract_uniprot_ident(target_description: str) -> str:
     return target_description.split("|")[1]
 
-def make_translation_dict_from_alignment(named_atoms: list[tuple[str, str, str]], alignment: Blast.HSP ) -> dict[tuple[str, str, int], list[str]] | None:
+
+def make_translation_dict_from_alignment(
+    named_atoms: list[tuple[str, str, str]], alignment: Blast.HSP
+) -> dict[tuple[str, str, int], list[str]] | None:
     named_atoms.sort(key=lambda x: int(x[2]))
     ident = extract_uniprot_ident(alignment.target.description)
     residue_info = get_residues_extended(ident)
@@ -291,20 +309,26 @@ def make_translation_dict_from_alignment(named_atoms: list[tuple[str, str, str]]
         return None
 
     # creates a list of tuples, where first element is the start index and second is the end index
-    target_slices = list(zip(alignment.coordinates[0][::2], alignment.coordinates[0][1::2]))
-    query_slices = list(zip(alignment.coordinates[1][::2], alignment.coordinates[1][1::2]))
+    target_slices = list(
+        zip(alignment.coordinates[0][::2], alignment.coordinates[0][1::2])
+    )
+    query_slices = list(
+        zip(alignment.coordinates[1][::2], alignment.coordinates[1][1::2])
+    )
 
     result = {}
     for qs, ts in zip(query_slices, target_slices):
-        keys = named_atoms[qs[0]-1 : qs[1]-1]
-        values = residue_info[ts[0]-1 : ts[1]-1]
-        for k,v in zip(keys,values):
+        keys = named_atoms[qs[0] - 1 : qs[1] - 1]
+        values = residue_info[ts[0] - 1 : ts[1] - 1]
+        for k, v in zip(keys, values):
             value = v.get("display_generic_number", "")
             result[k] = value if value is not None else ""
     return result
 
 
-def create_translation_dict2(topology: Path, trajectory: Path) -> dict[tuple[str, str, str], str] | None:
+def create_translation_dict2(
+    topology: Path, trajectory: Path
+) -> dict[tuple[str, str, str], str] | None:
     print("TRANSLATION DIC 2 CREATOR", flush=True)
     seq_chains = get_sequence_chains(topology, trajectory)
     result_dict = {}
@@ -325,7 +349,6 @@ def create_translation_dict2(topology: Path, trajectory: Path) -> dict[tuple[str
         # merge results from each chain
         result_dict = {**result_dict, **chain_dict}
     return result_dict
-
 
 
 if __name__ == "__main__":

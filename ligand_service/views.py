@@ -9,7 +9,12 @@ from django.conf import settings
 from submit.models import Submission, SubmissionTask
 from .tables import ContactsTable, ContactsTableNumbered
 
-from submit.contacts import create_translation_dict, create_translation_dict2, get_files_dir, get_files_maestro
+from submit.contacts import (
+    create_translation_dict,
+    create_translation_dict2,
+    get_files_dir,
+    get_files_maestro,
+)
 
 
 def redirect_to_submit(request):
