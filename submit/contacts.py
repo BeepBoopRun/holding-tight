@@ -9,8 +9,8 @@ import requests
 from vmd import molecule, atomsel
 from Bio import Blast
 
-BLASTP_PATH = os.path.abspath("./blast/ncbi-blast-2.17.0+/bin/blastp")
-BLASTDB_PATH = os.path.abspath("./blast/blast_db")
+BLASTP_PATH = Path("blast/ncbi-blast-2.17.0+/bin/blastp").absolute()
+BLASTDB_PATH = Path("blast/blast_db").absolute()
 
 DYNAMIC_CONTACTS_PATH = os.path.abspath("getcontacts/get_dynamic_contacts.py")
 CURRENT_INTERPRETER_PATH = sys.executable
@@ -188,9 +188,12 @@ def get_numbering(pdb_file: Path, outfile: Path):
 
 def get_residues_extended(uniprot_identifier: str) -> list[dict[Any, Any]] | None:
     url = GPCRDB_RESIDUES_EXTENDED_ENDPOINT + uniprot_identifier
+    print(f"Calling GPCRdb: {url}")
     response = requests.post(url)
     if response.ok:
+        print("Call successful", flush=True)
         return response.json()
+    print(f"Call failed: {response.status_code}", flush=True)
     return None
 
 
@@ -242,6 +245,9 @@ def create_translation_dict(
 
 
 def blast_sequence(seq: str) -> Blast.HSP | None:
+    print("Starting blast with seq:", seq, flush=True)
+    assert(BLASTDB_PATH.is_file())
+    assert(BLASTDB_PATH.is_file())
     results_file = tempfile.NamedTemporaryFile(suffix=".xml")
     job = sb.run(
         [
@@ -261,7 +267,8 @@ def blast_sequence(seq: str) -> Blast.HSP | None:
         input=seq.encode(),
     )
     if job.returncode != 0:
-        print(f"Getting accession number failed! Input: {seq}")
+        print(f"Getting accession number failed!")
+        print(f"Stderr: {job.stderr.decode()}", flush=True)
         return None
     # read the outputfile, return alignment
     blast_record: Blast.Record = Blast.read(results_file)
