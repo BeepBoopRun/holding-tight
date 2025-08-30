@@ -5,6 +5,7 @@ import subprocess
 
 from django.core.management.base import BaseCommand
 
+
 class Command(BaseCommand):
     help = "Prepares blastdb, using GPCRdb database"
 
@@ -27,15 +28,19 @@ class Command(BaseCommand):
                     )
 
         job = subprocess.run(
-            ["makeblastdb", "-in", "./blast/receptors.fasta", "-dbtype", "prot", "-out", "./blast/blast_db"],
+            [
+                "makeblastdb",
+                "-in",
+                "./blast/receptors.fasta",
+                "-dbtype",
+                "prot",
+                "-out",
+                "./blast/blast_db",
+            ],
             capture_output=True,
         )
-        self.stdout.write(
-                job.stdout.decode()
-        )
+        self.stdout.write(job.stdout.decode())
         if job.returncode != 0:
             self.style.ERROR(f"Creating blastdb failed! Stdout: {job.stderr.decode()}")
 
-        self.stdout.write(
-                self.style.SUCCESS("Blastdb successfuly created!")
-        )
+        self.stdout.write(self.style.SUCCESS("Blastdb successfuly created!"))

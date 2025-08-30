@@ -10,8 +10,8 @@ from submit.models import Submission, SubmissionTask
 from .tables import ContactsTable, ContactsTableNumbered
 
 from submit.contacts import (
-    create_translation_dict,
-    create_translation_dict2,
+    create_translation_dict_by_pdb,
+    create_translation_dict_by_vmd,
     get_files_dir,
     get_files_maestro,
 )
@@ -73,7 +73,7 @@ def search(request, job_id):
             )
             raw_table = [{k: v for k, v in row.items()} for row in reader]
             if submission.common_numbering:
-                dic = create_translation_dict(results_path / f"num_top{file_id}.pdb")
+                dic = create_translation_dict_by_pdb(results_path / f"num_top{file_id}.pdb")
                 for row in raw_table:
                     for atom in ["atom_1", "atom_2"]:
                         key = tuple(row[atom].split(":")[0:3])
@@ -89,7 +89,7 @@ def search(request, job_id):
                     files = get_files_dir(dir_path)
                 if files is None:
                     continue
-                dic = create_translation_dict2(files.topology, files.trajectory)
+                dic = create_translation_dict_by_vmd(files.topology, files.trajectory)
                 if dic is None:
                     print("NO TRANSLATION DICT CREATED!", flush=True)
                     return None

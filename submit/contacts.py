@@ -197,7 +197,7 @@ def get_residues_extended(uniprot_identifier: str) -> list[dict[Any, Any]] | Non
     return None
 
 
-def create_translation_dict(
+def create_translation_dict_by_pdb(
     numbered_pdb: Path,
 ) -> dict[tuple[str, str, str], list[str]]:
     trans_dict = {}
@@ -246,7 +246,6 @@ def create_translation_dict(
 
 def blast_sequence(seq: str) -> Blast.HSP | None:
     print("Starting blast with seq:", seq, flush=True)
-    assert(BLASTP_PATH.is_file())
     results_file = tempfile.NamedTemporaryFile(suffix=".xml")
     job = sb.run(
         [
@@ -266,7 +265,7 @@ def blast_sequence(seq: str) -> Blast.HSP | None:
         input=seq.encode(),
     )
     if job.returncode != 0:
-        print(f"Getting accession number failed!")
+        print("Sequence blast failed!")
         print(f"Stderr: {job.stderr.decode()}", flush=True)
         return None
     else:
@@ -302,42 +301,9 @@ def extract_uniprot_ident(target_description: str) -> str:
     return target_description.split("|")[1]
 
 
-def make_translation_dict_from_alignment(
-    named_atoms: list[tuple[str, str, str]], alignment: Blast.HSP
-) -> dict[tuple[str, str, int], list[str]] | None:
-    named_atoms.sort(key=lambda x: int(x[2]))
-    ident = extract_uniprot_ident(alignment.target.description)
-    residue_info = get_residues_extended(ident)
-    if residue_info is None:
-        print("REQUEST FAILED!", flush=True)
-        return None
-    # Alignment object uses 1 based indexing for coordinates, gpcrdb does not!!
-    if alignment.coordinates is None:
-        print("NO COORDINATES IN ALIGNMENT!", flush=True)
-        return None
-
-    # creates a list of tuples, where first element is the start index and second is the end index
-    target_slices = list(
-        zip(alignment.coordinates[0][::2], alignment.coordinates[0][1::2])
-    )
-    query_slices = list(
-        zip(alignment.coordinates[1][::2], alignment.coordinates[1][1::2])
-    )
-
-    result = {}
-    for qs, ts in zip(query_slices, target_slices):
-        keys = named_atoms[qs[0] - 1 : qs[1] - 1]
-        values = residue_info[ts[0] - 1 : ts[1] - 1]
-        for k, v in zip(keys, values):
-            value = v.get("display_generic_number", "")
-            result[k] = value if value is not None else ""
-    return result
-
-
-def create_translation_dict2(
+def create_translation_dict_by_vmd(
     topology: Path, trajectory: Path
 ) -> dict[tuple[str, str, str], str] | None:
-    print("TRANSLATION DIC 2 CREATOR", flush=True)
     seq_chains = get_sequence_chains(topology, trajectory)
     result_dict = {}
     for chain in seq_chains:
@@ -345,45 +311,56 @@ def create_translation_dict2(
         alignment = blast_sequence(seq)
         if alignment is None:
             print("FAILED TO GET ALIGNMENT!", flush=True)
-            return None
+            continue
         named_atoms = []
         for idx in seq_chains[chain]:
             # create (chain, residue_name, residue_idx) triplets
+            # for consistency with getcontacts lib
             named_atoms.append((chain, ONE_TO_THREE[seq_chains[chain][idx]], str(idx)))
-        chain_dict = make_translation_dict_from_alignment(named_atoms, alignment)
-        if chain_dict is None:
-            print("FAILED TO GET CHAIN_DICT!", flush=True)
-            return None
+            # sort by residue_idx
+            named_atoms.sort(key=lambda x: int(x[2]))
+            ident = extract_uniprot_ident(alignment.target.description)
+            residue_info = get_residues_extended(ident)
+            if residue_info is None:
+                print(
+                    f"Failed to get info from GPCRdb API, requested uniprot identifier: {ident}",
+                    flush=True,
+                )
+                continue
+            if alignment.coordinates is None:
+                print("NO COORDINATES IN ALIGNMENT!", flush=True)
+                continue
+            # creates a list of tuples, where first element is the start index and second is the end index
+            # (start idx, end idx)
+            target_slices = list(
+                zip(alignment.coordinates[0][::2], alignment.coordinates[0][1::2])
+            )
+            query_slices = list(
+                zip(alignment.coordinates[1][::2], alignment.coordinates[1][1::2])
+            )
+            chain_result = {}
+            for qs, ts in zip(query_slices, target_slices):
+                keys = named_atoms[qs[0] : qs[1]]
+                values = []
+                for idx in range(ts[0], ts[1]):
+                    for amino_acid in residue_info:
+                        if amino_acid["sequence_number"] == idx:
+                            values.append(amino_acid)
+                            break
+                for k, v in zip(keys, values):
+                    # compare amino acids
+                    if k[1] != ONE_TO_THREE[v["amino_acid"]]:
+                        print(
+                            f"MAPING MISMATCH: {k} : {ONE_TO_THREE[v['amino_acid']]}",
+                            flush=True,
+                        )
+                    value = v.get("display_generic_number", "")
+                    chain_result[k] = (
+                        value if value is not None else v["protein_segment"]
+                    )
+        for atom in named_atoms:
+            if atom not in chain_result:
+                print(f"ATOM NOT MAPPED! {atom}", flush=True)
         # merge results from each chain
-        result_dict = {**result_dict, **chain_dict}
-    return result_dict
-
-
-if __name__ == "__main__":
-    files = get_files_maestro(
-        Path(
-            "/home/zcrank/pan/dev/user_uploads/17a1ed8c-301d-4e61-8073-bd774799e52c"
-        ).absolute()
-    )
-    if files is None:
-        print("Couldn't find necesarry files!")
-        sys.exit(1)
-    print(create_translation_dict2(files.topology, files.trajectory))
-
-    # get_pdb(files.topology, files.trajectory, outfile=NUMBERED_PATH.absolute())
-    # get_numbering(NUMBERED_PATH, outfile=Path("./numbered_out.pdb"))
-    # out = create_translation_dict(Path("./numbered_out.pdb"))
-    # print(out)
-#  sequence = get_sequence(NUMBERED_PATH)
-#  aa_seq = ""
-#  for seq, res in sequence:
-#     aa_seq += res
-#  print(aa_seq)
-#  gpcrdb_num = get_residues_extended("4dkl")
-#  if gpcrdb_num is None:
-#      print("Something went wrong with GPCRDB call!!")
-#      sys.exit(1)
-#  aa_seq_gpcrdb = ""
-#  for res_info in gpcrdb_num:
-#      aa_seq_gpcrdb += res_info["amino_acid"]
-#  print(aa_seq_gpcrdb)
+        result_dict = {**result_dict, **chain_result}
+    return result_dict if len(result_dict) > 0 else None
