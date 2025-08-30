@@ -9,7 +9,7 @@ import requests
 from vmd import molecule, atomsel
 from Bio import Blast
 
-BLASTP_PATH = Path("blast/ncbi-blast-2.17.0+/bin/blastp").absolute()
+BLASTP_PATH = "blastp"
 BLASTDB_PATH = Path("blast/blast_db").absolute()
 
 DYNAMIC_CONTACTS_PATH = os.path.abspath("getcontacts/get_dynamic_contacts.py")
