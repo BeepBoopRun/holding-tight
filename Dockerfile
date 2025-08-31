@@ -1,8 +1,5 @@
 FROM mambaorg/micromamba:2.3.0
 
-USER root
-RUN apt-get update && apt-get install --no-install-recommends -y wget libgomp1
-
 COPY --chown=$MAMBA_USER:$MAMBA_USER . /home/$MAMBA_USER/prod
 WORKDIR /home/$MAMBA_USER/prod
 
