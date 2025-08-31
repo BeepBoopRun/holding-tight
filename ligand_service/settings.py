@@ -49,7 +49,6 @@ INSTALLED_APPS = [
     "tailwind",
     "theme",
     "widget_tweaks",
-    "submit",
     "ligand_service",
 ]
 

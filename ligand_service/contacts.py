@@ -4,10 +4,13 @@ import subprocess as sb
 from pathlib import Path
 from typing import Any, NamedTuple
 import tempfile
+import re
 
 import requests
 from vmd import molecule, atomsel
-from Bio import Blast
+from Bio import SearchIO
+
+from .models import GPCRdbResidueAPI
 
 BLASTP_PATH = "blastp"
 BLASTDB_PATH = Path("blast/blast_db").absolute()
@@ -187,13 +190,24 @@ def get_numbering(pdb_file: Path, outfile: Path):
 
 
 def get_residues_extended(uniprot_identifier: str) -> list[dict[Any, Any]] | None:
-    url = GPCRDB_RESIDUES_EXTENDED_ENDPOINT + uniprot_identifier
-    print(f"Calling GPCRdb: {url}")
-    response = requests.post(url)
-    if response.ok:
-        print("Call successful", flush=True)
-        return response.json()
-    print(f"Call failed: {response.status_code}", flush=True)
+    try:
+        cached_request = GPCRdbResidueAPI.objects.get(
+            uniprot_identifier=uniprot_identifier
+        )
+        print("Returning cached response...", flush=True)
+        return cached_request.response_json
+    except Exception:
+        url = GPCRDB_RESIDUES_EXTENDED_ENDPOINT + uniprot_identifier
+        print(f"Calling GPCRdb: {url}")
+        response = requests.post(url)
+        if response.ok:
+            print("Call successful", flush=True)
+            response_json = response.json()
+            GPCRdbResidueAPI.objects.create(
+                uniprot_identifier=uniprot_identifier, response_json=response_json
+            ).save()
+            return response_json
+        print(f"Call failed: {response.status_code}", flush=True)
     return None
 
 
@@ -244,7 +258,7 @@ def create_translation_dict_by_pdb(
     return trans_dict
 
 
-def blast_sequence(seq: str) -> Blast.HSP | None:
+def blast_sequence(seq: str) -> SearchIO.HSP | None:
     print("Starting blast with seq:", seq, flush=True)
     results_file = tempfile.NamedTemporaryFile(suffix=".xml")
     job = sb.run(
@@ -271,10 +285,10 @@ def blast_sequence(seq: str) -> Blast.HSP | None:
     else:
         print("Blast successful")
     # read the outputfile, return alignment
-    blast_record: Blast.Record = Blast.read(results_file)
-    for alignments in blast_record:
-        for alignment in alignments:
-            return alignment
+    blast_qresult: SearchIO.QueryResult = SearchIO.read(results_file, 'blast-xml')
+    for hit in blast_qresult:
+        for hsp in hit:
+            return hsp
     return None
 
 
@@ -318,46 +332,48 @@ def create_translation_dict_by_vmd(
             # for consistency with getcontacts lib
             named_atoms.append((chain, ONE_TO_THREE[seq_chains[chain][idx]], str(idx)))
             # sort by residue_idx
-            named_atoms.sort(key=lambda x: int(x[2]))
-            ident = extract_uniprot_ident(alignment.target.description)
-            residue_info = get_residues_extended(ident)
-            if residue_info is None:
-                print(
-                    f"Failed to get info from GPCRdb API, requested uniprot identifier: {ident}",
-                    flush=True,
-                )
-                continue
-            if alignment.coordinates is None:
-                print("NO COORDINATES IN ALIGNMENT!", flush=True)
-                continue
-            # creates a list of tuples, where first element is the start index and second is the end index
-            # (start idx, end idx)
-            target_slices = list(
-                zip(alignment.coordinates[0][::2], alignment.coordinates[0][1::2])
+        named_atoms.sort(key=lambda x: int(x[2]))
+        ident = extract_uniprot_ident(alignment.hit_id)
+        residue_info = get_residues_extended(ident)
+        if residue_info is None:
+            print(
+                f"Failed to get info from GPCRdb API, requested uniprot identifier: {ident}",
+                flush=True,
             )
-            query_slices = list(
-                zip(alignment.coordinates[1][::2], alignment.coordinates[1][1::2])
-            )
-            chain_result = {}
-            for qs, ts in zip(query_slices, target_slices):
-                keys = named_atoms[qs[0] : qs[1]]
-                values = []
-                for idx in range(ts[0], ts[1]):
-                    for amino_acid in residue_info:
-                        if amino_acid["sequence_number"] == idx:
-                            values.append(amino_acid)
-                            break
-                for k, v in zip(keys, values):
-                    # compare amino acids
-                    if k[1] != ONE_TO_THREE[v["amino_acid"]]:
-                        print(
-                            f"MAPING MISMATCH: {k} : {ONE_TO_THREE[v['amino_acid']]}",
-                            flush=True,
-                        )
-                    value = v.get("display_generic_number", "")
-                    chain_result[k] = (
-                        value if value is not None else v["protein_segment"]
+            continue
+        # creates a list of tuples, where first element is the start index and second is the end index
+        # (start idx, end idx)
+        target_slices = list(
+            zip(alignment.hit_range[::2], alignment.hit_range[1::2])
+        )
+        query_slices = list(
+            zip(alignment.query_range[::2], alignment.query_range[1::2])
+        )
+        print(target_slices, flush=True)
+        print(query_slices, flush=True)
+        chain_result = {}
+        for qs, ts in zip(query_slices, target_slices):
+            keys = named_atoms[qs[0] : qs[1]]
+            values = []
+            for idx in range(ts[0], ts[1]):
+                for amino_acid in residue_info:
+                    # sequence_number starts from 1, while coordinates start from 0
+                    if amino_acid["sequence_number"] == idx + 1:
+                        values.append(amino_acid)
+                        break
+            for k, v in zip(keys, values):
+                # compare amino acids
+                if k[1] != ONE_TO_THREE[v["amino_acid"]]:
+                    print(
+                        f"MAPING MISMATCH: {k} : {ONE_TO_THREE[v['amino_acid']]}",
+                        flush=True,
                     )
+                value = v.get("display_generic_number", "")
+                chain_result[k] = (
+                    re.sub(r"(\.\d*)", "", value)
+                    if value is not None
+                    else v["protein_segment"]
+                )
         for atom in named_atoms:
             if atom not in chain_result:
                 print(f"ATOM NOT MAPPED! {atom}", flush=True)

@@ -41,3 +41,8 @@ class SubmissionTask(models.Model):
         INTERACTIONS = "I", "Calculating interactions"
 
     task_type = models.CharField(max_length=1, choices=TaskType)
+
+
+class GPCRdbResidueAPI(models.Model):
+    uniprot_identifier = models.CharField(max_length=12)
+    response_json = models.JSONField()

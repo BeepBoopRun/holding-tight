@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h4 class="mt-4 text-xl">
+    Job ID: {{ job_id }}
+</h4>
+<p class="text-2xl mt-4">
+Status: Complete!
+</p>
+
+<h4 class="mt-4 text-xl">
+Under construction 👷🔨 (first time using plotly in browser)
+</h4>
+
+<h4 class="text-2xl mt-4">
+    Run details:
+</h4>
+
+<div id="details" class="text-lg">
+    {% for id, value, plotly_table, plotly_graph in data %}
+    <div class="flex-col items-center justify-center content-center">
+	<p class="text-xl">
+	Run {{ id }}:
+	</p>
+	{{ name_VOI|default:"Value" }}: {{ value }} <br>
+	Contacts by frame (notice that we provide better numbering than GPCRdb, not sure if it is correct though...):
+	<div class=""> 
+	    {{ plotly_table|safe }}
+	</div>
+	Interactions by frame (might be useful, maybe a stacked area graph would look better?):
+	<div> 
+	    {{ plotly_graph|safe }}
+	</div>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

@@ -21,7 +21,8 @@ from django.conf import settings
 from . import views
 
 urlpatterns = [
-    path("submit/", include("submit.urls")),
+    path("submit/", views.submit),
+    path("submit/form", views.form),
     path("admin/", admin.site.urls),
     path("", views.redirect_to_submit),
     path("about/", views.render_about),
