@@ -1,5 +1,4 @@
 from pathlib import Path
-import csv
 import uuid
 
 import plotly.graph_objects as go
@@ -22,7 +21,8 @@ from .contacts import (
     get_files_maestro,
 )
 
-PAGE_BG_COLOR = '#e5e7eb'
+PAGE_BG_COLOR = "#e5e7eb"
+
 
 def submit(request):
     formset = FileInputFormSet(prefix="submit")
@@ -152,14 +152,14 @@ def search(request, job_id):
                 csvfile,
                 names=[
                     "Frame",
-                    "Interaction type",
+                    "Interaction",
                     "Atom 1",
                     "Atom 2",
                     "Atom 3",
                     "Atom 4",
                 ],
                 delimiter="\t",
-                header=None
+                header=None,
             )
             if submission.common_numbering:
                 if form.file_input == "M":
@@ -171,6 +171,7 @@ def search(request, job_id):
                 dic = create_translation_dict_by_pdb(
                     results_path / f"num_top{file_id}.pdb"
                 )
+
                 def get_numbering_pdb(row):
                     assert dic is not None
                     for atom in ["Atom 1", "Atom 2"]:
@@ -181,12 +182,14 @@ def search(request, job_id):
                 df["PDB numbering"] = df.apply(get_numbering_pdb, axis=1)
                 print(df, flush=True)
                 dic = create_translation_dict_by_vmd(files.topology, files.trajectory)
+
                 def get_numbering_api(row):
                     assert dic is not None
                     for atom in ["Atom 1", "Atom 2"]:
                         key = tuple(row[atom].split(":")[0:3])
                         if key in dic:
                             return dic[key]
+
                 df["BLAST numbering"] = df.apply(get_numbering_api, axis=1)
 
             if form.name is not None and form.name != "":
@@ -194,17 +197,53 @@ def search(request, job_id):
             else:
                 run_name = file_id
 
-            layout_config = dict(margin=dict(l=0, r=0, t=0, b=0), paper_bgcolor=PAGE_BG_COLOR)
-            fig = go.Figure(data=[go.Table(header=dict(values=list(df.columns), line_color=PAGE_BG_COLOR ),
-                                           cells=dict(values=[df[col].apply(lambda x: "-" if x is None or pd.isna(x) else x) for col in df.columns], height=25, line_color=PAGE_BG_COLOR                                              ))
-                                  ])
+            layout_config = dict(
+                margin=dict(l=0, r=0, t=0, b=0), paper_bgcolor=PAGE_BG_COLOR
+            )
+            fig = go.Figure(
+                data=[
+                    go.Table(
+                        header=dict(values=list(df.columns), line_color=PAGE_BG_COLOR),
+                        cells=dict(
+                            values=[
+                                df[col].apply(
+                                    lambda x: "-" if x is None or pd.isna(x) else x
+                                )
+                                for col in df.columns
+                            ],
+                            height=25,
+                            line_color=PAGE_BG_COLOR,
+                        ),
+                    )
+                ]
+            )
             fig.update_layout(layout_config)
-            plotly_table = fig.to_html(full_html=False, include_plotlyjs='cdn', config={"displaylogo": False, "responsive": True})
-            interaction_count = df.groupby("Frame").size()
-            summary_df = pd.DataFrame({"Frame" : interaction_count.index.tolist(), "Count": interaction_count.tolist()})
-            fig = px.scatter(summary_df, x="Frame", y="Count", title="Interaction counts")
+            plotly_table = fig.to_html(
+                full_html=False,
+                include_plotlyjs="cdn",
+                config={"displaylogo": False, "responsive": True},
+            )
+
+            interaction_count = (
+                df.groupby(["Frame", "Interaction"])
+                .agg(Count=("Atom 1", "count"))
+                .reset_index()
+            )
+            print(interaction_count, flush=True)
+            fig = px.area(
+                interaction_count,
+                x="Frame",
+                y="Count",
+                title="Interaction counts",
+                line_group="Interaction",
+                color="Interaction",
+            )
             fig.update_layout(layout_config)
-            plotly_graph = fig.to_html(full_html=False, include_plotlyjs='cdn', config={"displaylogo": False, "responsive": True})
+            plotly_graph = fig.to_html(
+                full_html=False,
+                include_plotlyjs="cdn",
+                config={"displaylogo": False, "responsive": True},
+            )
             data.append(
                 (
                     run_name,

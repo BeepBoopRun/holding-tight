@@ -285,7 +285,7 @@ def blast_sequence(seq: str) -> SearchIO.HSP | None:
     else:
         print("Blast successful")
     # read the outputfile, return alignment
-    blast_qresult: SearchIO.QueryResult = SearchIO.read(results_file, 'blast-xml')
+    blast_qresult: SearchIO.QueryResult = SearchIO.read(results_file, "blast-xml")
     for hit in blast_qresult:
         for hsp in hit:
             return hsp
@@ -343,9 +343,7 @@ def create_translation_dict_by_vmd(
             continue
         # creates a list of tuples, where first element is the start index and second is the end index
         # (start idx, end idx)
-        target_slices = list(
-            zip(alignment.hit_range[::2], alignment.hit_range[1::2])
-        )
+        target_slices = list(zip(alignment.hit_range[::2], alignment.hit_range[1::2]))
         query_slices = list(
             zip(alignment.query_range[::2], alignment.query_range[1::2])
         )
