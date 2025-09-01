@@ -1,9 +1,6 @@
 from pathlib import Path
 import uuid
 
-import plotly.graph_objects as go
-import plotly.express as px
-import pandas as pd
 
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
@@ -12,16 +9,10 @@ from django.conf import settings
 from .models import Submission, SubmissionTask
 from .forms import FileInputFormSet, InputDetails
 from .models import SubmittedForm
-from .tasks import queue_task
+from .tasks import analyse_submission, queue_task
 
-from .contacts import (
-    create_translation_dict_by_pdb,
-    create_translation_dict_by_vmd,
-    get_files_dir,
-    get_files_maestro,
-)
 
-PAGE_BG_COLOR = "#e5e7eb"
+
 
 
 def submit(request):
@@ -124,7 +115,7 @@ def search(request, job_id):
         return render(
             request,
             "search/empty.html",
-            {"status": "Job ID does not exist!", "job_id": job_id},
+            {"message": "Selected JOB ID does not exist!", "job_id": job_id},
         )
 
     tasks = SubmissionTask.objects.filter(submission=submission)
@@ -135,130 +126,16 @@ def search(request, job_id):
             {"job_id": job_id, "tasks": tasks},
         )
 
-    sub_id = str(submission.id)
-    results_path = Path(settings.MEDIA_ROOT).joinpath(sub_id, "results")
 
-    data = []
-    for form in submission.submittedform_set.all():
-        file_id = str(form.form_id)
-        sub_id = str(submission.id)
-        sub_path = Path(settings.MEDIA_ROOT).joinpath(sub_id)
-        dir_path = Path(sub_path, file_id)
-        with open(results_path.joinpath(f"result{file_id}.tsv"), newline="") as csvfile:
-            for _ in range(2):
-                next(csvfile)
-
-            df = pd.read_csv(
-                csvfile,
-                names=[
-                    "Frame",
-                    "Interaction",
-                    "Atom 1",
-                    "Atom 2",
-                    "Atom 3",
-                    "Atom 4",
-                ],
-                delimiter="\t",
-                header=None,
-            )
-            if submission.common_numbering:
-                if form.file_input == "M":
-                    files = get_files_maestro(dir_path)
-                elif form.file_input == "T":
-                    files = get_files_dir(dir_path)
-                if files is None:
-                    continue
-                dic = create_translation_dict_by_pdb(
-                    results_path / f"num_top{file_id}.pdb"
-                )
-
-                def get_numbering_pdb(row):
-                    assert dic is not None
-                    for atom in ["Atom 1", "Atom 2"]:
-                        key = tuple(row[atom].split(":")[0:3])
-                        if key in dic:
-                            return dic[key][1]
-
-                df["PDB numbering"] = df.apply(get_numbering_pdb, axis=1)
-                print(df, flush=True)
-                dic = create_translation_dict_by_vmd(files.topology, files.trajectory)
-
-                def get_numbering_api(row):
-                    assert dic is not None
-                    for atom in ["Atom 1", "Atom 2"]:
-                        key = tuple(row[atom].split(":")[0:3])
-                        if key in dic:
-                            return dic[key]
-
-                df["BLAST numbering"] = df.apply(get_numbering_api, axis=1)
-
-            if form.name is not None and form.name != "":
-                run_name = f'"{form.name}"'
-            else:
-                run_name = file_id
-
-            layout_config = dict(
-                margin=dict(l=0, r=0, t=0, b=0), paper_bgcolor=PAGE_BG_COLOR
-            )
-            fig = go.Figure(
-                data=[
-                    go.Table(
-                        header=dict(values=list(df.columns), line_color=PAGE_BG_COLOR),
-                        cells=dict(
-                            values=[
-                                df[col].apply(
-                                    lambda x: "-" if x is None or pd.isna(x) else x
-                                )
-                                for col in df.columns
-                            ],
-                            height=25,
-                            line_color=PAGE_BG_COLOR,
-                        ),
-                    )
-                ]
-            )
-            fig.update_layout(layout_config)
-            plotly_table = fig.to_html(
-                full_html=False,
-                include_plotlyjs="cdn",
-                config={"displaylogo": False, "responsive": True},
-            )
-
-            interaction_count = (
-                df.groupby(["Frame", "Interaction"])
-                .agg(Count=("Atom 1", "count"))
-                .reset_index()
-            )
-            print(interaction_count, flush=True)
-            fig = px.area(
-                interaction_count,
-                x="Frame",
-                y="Count",
-                title="Interaction counts",
-                line_group="Interaction",
-                color="Interaction",
-            )
-            fig.update_layout(layout_config)
-            plotly_graph = fig.to_html(
-                full_html=False,
-                include_plotlyjs="cdn",
-                config={"displaylogo": False, "responsive": True},
-            )
-            data.append(
-                (
-                    run_name,
-                    form.value,
-                    plotly_table,
-                    plotly_graph,
-                )
-            )
+    group_data, runs_data = analyse_submission(submission)
 
     return render(
         request,
         "search/found.html",
         {
             "job_id": job_id,
-            "data": data,
+            "runs_data": runs_data,
+            "group_data": group_data,
             "name_VOI": submission.name_VOI,
         },
     )

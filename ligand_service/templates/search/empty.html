@@ -2,6 +2,13 @@
 
 {% block content %}
 
+
+{% if message %}
+<h4 class="my-4 text-xl bg-red-300 rounded-lg p-2 w-fit">
+    {{ message }}
+</h4>
+{% endif %}
+
 <h4 class="my-4 text-xl">
 Provide ID of your job:
 </h4>

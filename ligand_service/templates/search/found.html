@@ -9,8 +9,9 @@
 Status: Complete!
 </p>
 
-<h4 class="mt-4 text-xl">
-Under construction 👷🔨 (first time using plotly in browser)
+<h4 class="text-2xl mt-4">
+    Group data:
+    {{ group_data.status }}
 </h4>
 
 <h4 class="text-2xl mt-4">
@@ -18,19 +19,19 @@ Under construction 👷🔨 (first time using plotly in browser)
 </h4>
 
 <div id="details" class="text-lg">
-    {% for id, value, plotly_table, plotly_graph in data %}
+    {% for run in runs_data %}
     <div class="flex-col items-center justify-center content-center">
 	<p class="text-xl">
-	Run {{ id }}:
+	Run {{ run.id }}:
 	</p>
-	{{ name_VOI|default:"Value" }}: {{ value }} <br>
+	{{ name_VOI|default:"Value" }}: {{ run.value }} <br>
 	Contacts by frame (notice that we provide better numbering than GPCRdb, not sure if it is correct though...):
 	<div class=""> 
-	    {{ plotly_table|safe }}
+	    {{ run.table|safe }}
 	</div>
-	Interactions by frame (might be useful, maybe a stacked area graph would look better?):
+	Interactions by frame (do we keep it?):
 	<div> 
-	    {{ plotly_graph|safe }}
+	    {{ run.interaction_graph|safe }}
 	</div>
     </div>
     {% endfor %}
