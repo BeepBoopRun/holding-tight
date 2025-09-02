@@ -36,10 +36,12 @@ INTERACTION_TYPES_LONG = {
     "lwb2": "Lig.–ext. water H-bond",
 }
 
+
 def save_file(file_handle, path_to_save_location: Path):
     with open(path_to_save_location, "wb+") as destination:
         for chunk in file_handle.chunks():
             destination.write(chunk)
+
 
 def find_interactions(submission: Submission):
     print(submission, flush=True)
@@ -77,7 +79,7 @@ def prepare_numbering_pdb(submission: Submission):
         )
     print("Numbering PDB files complete", flush=True)
 
-    
+
 def load_getcontacts_csv(file: Path | str) -> pd.DataFrame:
     with open(file, newline="") as csvfile:
         for _ in range(2):
@@ -98,31 +100,35 @@ def load_getcontacts_csv(file: Path | str) -> pd.DataFrame:
         )
         return df
 
+
 def create_getcontacts_table(get_contacts_df: pd.DataFrame) -> str:
     fig = go.Figure(
-            data=[
-                go.Table(
-                    header=dict(values=list(get_contacts_df.columns), line_color=PAGE_BG_COLOR),
-                    cells=dict(
-                        values=[
-                            get_contacts_df[col].apply(
-                                lambda x: "-" if x is None or pd.isna(x) else x
-                                )
-                            for col in get_contacts_df.columns
-                            ],
-                        line_color=PAGE_BG_COLOR,
-                        ),
-                    )
-                ]
+        data=[
+            go.Table(
+                header=dict(
+                    values=list(get_contacts_df.columns), line_color=PAGE_BG_COLOR
+                ),
+                cells=dict(
+                    values=[
+                        get_contacts_df[col].apply(
+                            lambda x: "-" if x is None or pd.isna(x) else x
+                        )
+                        for col in get_contacts_df.columns
+                    ],
+                    line_color=PAGE_BG_COLOR,
+                ),
             )
+        ]
+    )
     fig.update_traces(columnwidth=[100, 300])
     fig.update_layout(COMMON_LAYOUT)
     table = fig.to_html(
-            full_html=False,
-            include_plotlyjs="cdn",
-            config={"displaylogo": False, "responsive": True},
-            )
+        full_html=False,
+        include_plotlyjs="cdn",
+        config={"displaylogo": False, "responsive": True},
+    )
     return table
+
 
 def create_interaction_area_graph(get_contacts_df: pd.DataFrame) -> str:
     interaction_count = (
@@ -148,23 +154,20 @@ def create_interaction_area_graph(get_contacts_df: pd.DataFrame) -> str:
     )
     return graph
 
+
 def analyse_submission(submission: Submission):
     results_path = submission.get_results_directy()
     group_data = {"status": "TO BE ADDED!"}
     runs_data = []
-    
+
     for form in submission.submittedform_set.all():
         run_data = {}
         file_id = str(form.form_id)
         df = load_getcontacts_csv(results_path / f"result{file_id}.tsv")
-        df["Interaction"] = df["Interaction"].apply(
-            lambda x: INTERACTION_TYPES_LONG[x]
-        )
+        df["Interaction"] = df["Interaction"].apply(lambda x: INTERACTION_TYPES_LONG[x])
         if submission.common_numbering:
-            files = form.get_trajectory_files() 
-            dic = create_translation_dict_by_pdb(
-                results_path / f"num_top{file_id}.pdb"
-            )
+            files = form.get_trajectory_files()
+            dic = create_translation_dict_by_pdb(results_path / f"num_top{file_id}.pdb")
 
             def get_numbering_pdb(row):
                 assert dic is not None
@@ -177,6 +180,7 @@ def analyse_submission(submission: Submission):
             print(df, flush=True)
 
             dic = create_translation_dict_by_blast(files.topology, files.trajectory)
+
             def get_numbering_blast(row):
                 assert dic is not None
                 for atom in ["Atom 1", "Atom 2"]:
@@ -189,8 +193,9 @@ def analyse_submission(submission: Submission):
         run_data["table"] = create_getcontacts_table(df)
         run_data["value"] = form.value
         runs_data.append(run_data)
-    
+
     return (group_data, runs_data)
+
 
 def queue_task(submission: Submission, task_type: SubmissionTask.TaskType):
     task = SubmissionTask.objects.create(

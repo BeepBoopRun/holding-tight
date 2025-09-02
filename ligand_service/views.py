@@ -12,9 +12,6 @@ from .models import SubmittedForm
 from .tasks import analyse_submission, queue_task
 
 
-
-
-
 def submit(request):
     formset = FileInputFormSet(prefix="submit")
     details = InputDetails()
@@ -125,7 +122,6 @@ def search(request, job_id):
             "search/ongoing.html",
             {"job_id": job_id, "tasks": tasks},
         )
-
 
     group_data, runs_data = analyse_submission(submission)
 

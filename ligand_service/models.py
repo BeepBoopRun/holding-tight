@@ -20,7 +20,6 @@ class Submission(models.Model):
     def get_results_directy(self):
         return self.get_main_directory().joinpath("results")
 
-        
 
 class SubmittedForm(models.Model):
     submission = models.ForeignKey(Submission, on_delete=models.CASCADE)

@@ -51,6 +51,7 @@ THREE_TO_ONE = {
 
 ONE_TO_THREE = {v: k for k, v in THREE_TO_ONE.items()}
 
+
 def filetype(file: Path) -> str:
     filetype = file.suffix[1:]
     if filetype == "cms":
@@ -74,6 +75,7 @@ def get_sequence_chains(
             structure[chain] = {}
         structure[chain][residue_id] = THREE_TO_ONE.get(resname, "X")
     return structure
+
 
 def get_interactions(topology_file: Path, trajectory_file: Path, outfile: Path):
     process = sb.Popen(
