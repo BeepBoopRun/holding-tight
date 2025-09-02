@@ -7,7 +7,7 @@ python manage.py run_huey &
 pid2=$!
 
 while true; do
-    sleep 1m
+    sleep 10m
 
     echo "Checking for new commits..."
     [ "$(git pull)" = "Already up to date." ] && { echo "No new commits. Waiting again..."; continue; } || echo "Applying changes, restaring the server..."
