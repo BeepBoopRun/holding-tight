@@ -192,6 +192,7 @@ def analyse_submission(submission: Submission):
             run_data["interaction_graph"] = create_interaction_area_graph(df)
         run_data["table"] = create_getcontacts_table(df)
         run_data["value"] = form.value
+        run_data["id"] = str(form.form_id)
         runs_data.append(run_data)
 
     return (group_data, runs_data)

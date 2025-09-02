@@ -12,7 +12,8 @@ while true; do
     micromamba install -f env.yaml -y
     python3 manage.py migrate
     python3 manage.py collectstatic --noinput
-    kill "$(jobs -p)"
+    kill %1
+    kill %2
     # time for graceful shutdown
     sleep 1m
     gunicorn -b 0.0.0.0:8000 ligand_service.wsgi --timeout 120 &
