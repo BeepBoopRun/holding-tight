@@ -1,0 +1,20 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    restart: "unless-stopped"
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /home/mambauser/prod
+  huey:
+    build: .
+    command: micromamba run python manage.py run_huey
+    restart: "unless-stopped"
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./ligand_service/tasks.py
+          target: /home/mambauser/prod/ligand_service/tasks.py

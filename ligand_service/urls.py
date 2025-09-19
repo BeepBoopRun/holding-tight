@@ -18,6 +18,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 from django.conf import settings
+from django.conf.urls.static import static
 from . import views
 
 urlpatterns = [
@@ -28,7 +29,7 @@ urlpatterns = [
     path("about/", views.render_about),
     path("search/", views.empty_search),
     path("search/<str:job_id>", views.search),
-]
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 if settings.DEBUG:
     # Include django_browser_reload URLs only in DEBUG mode

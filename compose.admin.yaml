@@ -1,0 +1,8 @@
+services:
+  web:
+    command: >
+      sh -c "
+        micromamba run python manage.py tailwind install --no-input && 
+        echo 'STARTING THE SERVER' &&
+        micromamba run python manage.py tailwind dev
+      "    

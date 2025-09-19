@@ -1,14 +1,22 @@
+import base64
+from io import BytesIO
 import sys
 import os
 import subprocess as sb
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 import tempfile
+import shutil
+import datetime
 import re
 
+import pandas as pd
+import xmltodict
 import requests
 from vmd import molecule, atomsel
 from Bio import SearchIO
+from rdkit import Chem
+from rdkit.Chem import Draw
 
 from .models import GPCRdbResidueAPI
 
@@ -75,40 +83,6 @@ def get_sequence_chains(
             structure[chain] = {}
         structure[chain][residue_id] = THREE_TO_ONE.get(resname, "X")
     return structure
-
-
-def get_interactions(topology_file: Path, trajectory_file: Path, outfile: Path):
-    process = sb.Popen(
-        [
-            CURRENT_INTERPRETER_PATH,
-            DYNAMIC_CONTACTS_PATH,
-            "--trajectory",
-            trajectory_file,
-            "--topology",
-            topology_file,
-            "--itypes",
-            "all",
-            "--output",
-            outfile,
-            "--sele2",
-            "ligand",
-            "--cores",
-            CORES_AVAILABLE,
-        ],
-        stdout=sb.PIPE,
-        stderr=sb.STDOUT,
-        text=True,
-        bufsize=1,
-    )
-
-    assert process.stdout is not None
-
-    for line in process.stdout:
-        print("GET CONTACTS:", line.strip())
-
-    process.wait()
-    print("GET CONTACTS: Done!")
-
 
 def get_pdb(topology_file: Path, trajectory_file: Path, outfile: Path):
     molid = molecule.load(filetype(topology_file), str(topology_file))
@@ -260,9 +234,10 @@ def extract_uniprot_ident(target_description: str) -> str:
 
 def create_translation_dict_by_blast(
     topology: Path, trajectory: Path
-) -> dict[tuple[str, str, str], str] | None:
+) -> tuple[dict[tuple[str, str, str], str], dict[str, tuple[str, str]]] | None:
     seq_chains = get_sequence_chains(topology, trajectory)
     result_dict = {}
+    alignment_scores = {}
     for chain in seq_chains:
         seq = "".join([res_name[1] for res_name in sorted(seq_chains[chain].items())])
         alignment = blast_sequence(seq)
@@ -284,6 +259,8 @@ def create_translation_dict_by_blast(
                 flush=True,
             )
             continue
+        alignment_scores[chain] = (ident, alignment.evalue)
+        print(f"ALIGNMENT SCORES: {alignment_scores}", flush=True)
         # creates a list of tuples, where first element is the start index and second is the end index
         # (start idx, end idx)
         target_slices = list(zip(alignment.hit_range[::2], alignment.hit_range[1::2]))
@@ -320,4 +297,111 @@ def create_translation_dict_by_blast(
                 print(f"ATOM NOT MAPPED! {atom}", flush=True)
         # merge results from each chain
         result_dict = {**result_dict, **chain_result}
-    return result_dict if len(result_dict) > 0 else None
+    return (result_dict, alignment_scores) if len(result_dict) > 0 else None
+
+def get_results_plip(pdbfiles: list[Path], outdir: Path | None = None):
+    if outdir is not None:
+        prev_wd = os.getcwd()
+        os.chdir(outdir)
+    process = sb.Popen(
+        [
+            "plip",
+            "-v",
+            "-x",
+            "-f",
+        ] + pdbfiles,
+        stdout=sb.PIPE,
+        stderr=sb.STDOUT,
+        text=True,
+        bufsize=1,
+    )
+
+    if outdir is not None:
+        os.chdir(prev_wd)
+
+    assert process.stdout is not None
+
+    for line in process.stdout:
+        print("PLIP: ", line.strip())
+
+    process.wait()
+    print("PLIP: Done!")
+    return process.returncode == 0
+
+def get_trajectory_frame_count(topology_file: Path, trajectory_file: Path):
+    molid = molecule.load(filetype(topology_file), str(topology_file))
+    num_frames = molecule.numframes(molid)
+    print("Number of frames before loading trajectory", num_frames)
+    molecule.read(molid=molid,
+                  filetype=filetype(trajectory_file),
+                  filename=str(trajectory_file),
+                  waitfor=-1)
+    return molecule.numframes(molid) - num_frames
+
+WATER_SYNONYMS = ["H2O", "HOH", "OH2", "HHO", "OHH", "TIP", "T3P", "T4P", "T5P", "SOL", "TIP2", "TIP3", "TIP4"] 
+WATER_SELECTION = "("
+for syn in WATER_SYNONYMS:
+    WATER_SELECTION += f"resname {syn} or "
+WATER_SELECTION = WATER_SELECTION[:-4] + ")"
+
+residue_map = {
+    "HIE": "HIS", "HIP": "HIS", "HID": "HIS",
+    "ASH": "ASP", "GLH": "GLU",
+    "CYX": "CYS", "CYM": "CYS"
+}
+
+def get_frames_from_trajectory(
+        topology_file: Path, trajectory_file: Path, outdir: Path, frames: list[int]
+) -> list[Path]:
+    molid = molecule.load(filetype(topology_file), str(topology_file))
+    num_frames = molecule.numframes(molid)
+    print("Number of frames before loading trajectory", num_frames)
+
+    if num_frames > 0:
+        frames = [frame + num_frames for frame in frames]
+
+    molecule.read(molid=molid,
+                  filetype=filetype(trajectory_file),
+                  filename=str(trajectory_file),
+                  first=min(frames),
+                  last=max(frames),
+                  waitfor=-1)
+
+    print("Number of frames after loading trajectory", molecule.numframes(molid))
+
+    offset = min(frames)
+    outfiles = []
+    water = atomsel(f"{WATER_SELECTION}", molid=molid)
+    water.resname = "WAT"
+
+    for nonstandard_name, standard_name in residue_map.items():
+        residues = atomsel(f"resname {nonstandard_name}", molid=molid)
+        residues.resname = standard_name
+
+    for frame in frames:
+        protein = atomsel("(not lipid) and (same fragment as (within 7 of protein))", molid=molid, frame=frame-offset)
+        outfile = str(outdir / f"frame{frame}.pdb")
+        molecule.write(molid=molid,
+                       filetype="pdb",
+                       filename=str(outdir / f"frame{frame}.pdb"),
+                       first=frame - offset,
+                       last=frame - offset,
+                       selection=protein)
+        outfiles.append(outfile)
+    return outfiles
+
+def get_interactions_from_trajectory(
+        topology_file: Path, trajectory_file: Path, workdir: Path, frames: list[int]
+        ):
+    frames_dir = workdir / "frames"
+    frames_dir.mkdir(parents=True)
+    plip_dir = workdir / "results"
+    plip_dir.mkdir(parents=True)
+    print("Starting...")
+    tick = datetime.datetime.now()
+    pdbs = get_frames_from_trajectory(topology_file, trajectory_file, frames_dir, frames)
+    get_results_plip(pdbs, plip_dir)
+    tock = datetime.datetime.now()
+    print("Done...")
+    print("Running time: ", (tock-tick))
+

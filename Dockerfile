@@ -1,19 +1,32 @@
 FROM mambaorg/micromamba:2.3.0
 
 USER root
-RUN apt-get update && apt-get install git -y
-
-COPY --chown=$MAMBA_USER:$MAMBA_USER . /home/$MAMBA_USER/prod
-WORKDIR /home/$MAMBA_USER/prod
+RUN apt-get update && apt-get install curl -y
 
 USER $MAMBA_USER
+ENV NVM_DIR=/home/$MAMBA_USER/.nvm
+RUN mkdir -p $NVM_DIR \
+    && curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash \
+    && . "$HOME/.nvm/nvm.sh" \
+    && nvm install v22.19.0 \
+    && nvm which node \
+    && node -v \
+    && npm -v
+ENV PATH=$NVM_DIR/versions/node/v22.19.0/bin/:$PATH
+
+WORKDIR /home/$MAMBA_USER/prod
+COPY --chown=$MAMBA_USER:$MAMBA_USER ./env.yaml env.yaml
+
 RUN micromamba install -y -n base -f ./env.yaml && \
     micromamba clean --all --yes
 
+COPY --chown=$MAMBA_USER:$MAMBA_USER ./setup ./setup
+RUN micromamba run python /home/$MAMBA_USER/prod/setup/makeblastdb.py
+RUN micromamba run python /home/$MAMBA_USER/prod/setup/getchebi.py 
+
+COPY --chown=$MAMBA_USER:$MAMBA_USER . .
 ENV ENV_NAME=base
-
-RUN micromamba run python manage.py makeblastdb 
+ENV PYTHONUNBUFFERED=1
 RUN micromamba run python manage.py migrate
-
 
 CMD ["micromamba", "run", "sh", "docker_entrypoint.sh"]

@@ -2,36 +2,95 @@
 
 {% block content %}
 
-<h4 class="mt-4 text-xl">
-    Job ID: {{ job_id }}
-</h4>
-<p class="text-2xl mt-4">
-Status: Complete!
-</p>
+<script>
+    function showContent(event) {
+	const parent = event.target.closest('div');
+	const infoElement = parent.querySelector('.info');
+	infoElement.classList.toggle("hidden");
+    }
+</script>
 
-<h4 class="text-2xl mt-4">
-    Group data:
-    {{ group_data.status }}
-</h4>
+<div>
+    <button class="text-xl border rounded-lg p-2 bg-indigo-100 hover:bg-indigo-200 mt-1 w-full text-left hover:cursor-pointer" onclick="showContent(event)">
+	Submission information
+    </button>
+    <div class="info p-2 text-lg border-x border-b border-dotted rounded-lg">
+	Job ID: {{ job_id }}
+    </div>
+</div>
 
-<h4 class="text-2xl mt-4">
-    Run details:
-</h4>
+<div>
+    <button class="text-xl border rounded-lg p-2 bg-indigo-100 hover:bg-indigo-200 mt-1 w-full text-left hover:cursor-pointer" onclick="showContent(event)">
+	Simulation comparison
+    </button>
+    <div class="info p-2 text-lg border-x border-b border-dotted rounded-lg">
+	TODO!
+    </div>
+</div>
 
 <div id="details" class="text-lg">
     {% for run in runs_data %}
     <div class="flex-col items-center justify-center content-center">
-	<p class="text-xl">
-	Run {{ run.id }}:
-	</p>
-	{{ name_VOI|default:"Value" }}: {{ run.value }} <br>
-	Contacts by frame (notice that we provide better numbering than GPCRdb, not sure if it is correct though...):
-	<div class=""> 
-	    {{ run.table|safe }}
-	</div>
-	Interactions by frame: 
-	<div> 
-	    {{ run.interaction_graph|safe }}
+	<div>
+	    <button class="text-xl border rounded-lg p-2 bg-indigo-100 hover:bg-indigo-200 mt-1 w-full text-left hover:cursor-pointer" onclick="showContent(event)">
+		Simulation {{ run.id }}
+	    </button>
+	    <div class="info px-2 pb-2 border-x border-b border-dotted rounded-lg">
+		{{ name_VOI|default:"Value from experiment" }}: {{ run.value }} <br>
+		<div>
+		    <button class="text-xl border rounded-lg p-2 bg-indigo-100 hover:bg-indigo-200 mt-1 w-full text-left hover:cursor-pointer" onclick="showContent(event)">
+			Interactions by frame
+		    </button>
+		    <div class="info p-2 text-lg border-x border-b border-dotted rounded-lg">
+			{{ run.table|safe }}
+		    </div>
+		</div>
+		<div>
+		    <button class="text-xl border rounded-lg p-2 bg-indigo-100 hover:bg-indigo-200 mt-1 w-full text-left hover:cursor-pointer" onclick="showContent(event)">
+			Overall interactions	
+		    </button>
+		    <div class="info p-2 text-lg border-x border-b border-dotted rounded-lg">
+			{{ run.interaction_graph|safe }}
+		    </div>
+		</div>
+		<div>
+		    <button class="text-xl border rounded-lg p-2 bg-indigo-100 hover:bg-indigo-200 mt-1 w-full text-left hover:cursor-pointer" onclick="showContent(event)">
+			Interaction map
+		    </button>
+		    <div class="info p-2 text-lg border-x border-b border-dotted rounded-lg">
+			{{ run.map|safe }}
+		    </div>
+		</div>
+		<div>
+		    <button class="text-xl border rounded-lg p-2 bg-indigo-100 hover:bg-indigo-200 mt-1 w-full text-left hover:cursor-pointer" onclick="showContent(event)">
+			Detected ligands
+		    </button>
+		    <div class="info p-2 text-lg border-x border-b border-dotted rounded-lg flex gap-2">
+			{% for ligand in run.ligands %}
+			<div class="bg-gray-300 w-fit p-2 rounded-lg">
+			    <div class="border w-fit"> 
+				{{ ligand.img|safe }}
+			    </div>
+			    Name: {{ ligand.name|default_if_none:"Unknown" }} <br>
+			    {% if ligand.id  %}
+			    ChEBI ID: <a href="https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:{{ ligand.id }}" class="hover:underline text-blue-600 inline">{{ ligand.id }}</a> <br>
+			    {% else %}
+			    ChEBI ID: Unknown <br>
+			    {% endif %}
+			    Detected in {{ ligand.frames_seen }} frame{{ ligand.frames_seen|pluralize }} <br>
+			</div>
+			{% endfor %}
+		    </div>
+		</div>
+		<div>
+		    <button class="text-xl border rounded-lg p-2 bg-indigo-100 hover:bg-indigo-200 mt-1 w-full text-left hover:cursor-pointer" onclick="showContent(event)">
+			Protein numbering / alignment
+		    </button>
+		    <div class="info p-2 text-lg border-x border-b border-dotted rounded-lg flex gap-2">
+			{{ run.alignment_scores }}
+		    </div>
+		</div>
+	    </div>
 	</div>
     </div>
     {% endfor %}

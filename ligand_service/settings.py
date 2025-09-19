@@ -34,7 +34,6 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "") != "False"
 
 ALLOWED_HOSTS = ["*"]
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -57,6 +56,7 @@ if DEBUG:
     INSTALLED_APPS += ["django_browser_reload"]
 
 TAILWIND_APP_NAME = "theme"
+NPM_BIN_PATH = "/home/mambauser/.nvm/versions/node/v22.19.0/bin/npm"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -146,6 +146,9 @@ STATIC_URL = "static/"
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+#STATICFILES_DIRS = [
+#    BASE_DIR / "static",
+#]
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 

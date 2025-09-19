@@ -1,4 +1,13 @@
-user_uploads/*
-**/node_modules
 **/__pycache__
-blast/raw
+huey.*
+db.*
+
+.ruff_cache
+
+blast/*
+chebi/*
+user_uploads/*
+theme/static_src/node_modules
+
+Dockerfile
+refresh_theme.sh

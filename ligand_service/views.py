@@ -86,9 +86,9 @@ def form(request):
             ).save()
     queue_task(submission, task_type=SubmissionTask.TaskType.INTERACTIONS)
 
-    if not compare_by_residue:
-        queue_task(submission, task_type=SubmissionTask.TaskType.NUMBERING)
-
+#    if not compare_by_residue:
+#        queue_task(submission, task_type=SubmissionTask.TaskType.NUMBERING)
+#
     return HttpResponseRedirect(f"/search/{submission_id}")
 
 
@@ -124,6 +124,7 @@ def search(request, job_id):
         )
 
     group_data, runs_data = analyse_submission(submission)
+
 
     return render(
         request,

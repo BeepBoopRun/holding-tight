@@ -6,10 +6,13 @@ document.addEventListener("DOMContentLoaded", (event) => {
     function refreshSite() {
 	remainingTime -= 1;
 	if(remainingTime <= 0) {
-	    location.reload()
+	    location.reload();
+	    clearInterval(refreshIntervalId);
 	}
-	statusInfo.textContent = statusInfo.textContent.slice(0, -2) + remainingTime
+	statusInfo.textContent = statusInfo.textContent.slice(0, -2) + remainingTime;
     }
 
-    setInterval(refreshSite, 1000)
+    var refreshIntervalId = setInterval(refreshSite, 1000);
 });
+
+
