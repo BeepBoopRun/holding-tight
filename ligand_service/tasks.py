@@ -351,7 +351,8 @@ def analyse_submission(submission: Submission):
         run_data["table"] = create_getcontacts_table(df)
         run_data["map"] = create_time_resolved_map(df)
         run_data["value"] = form.value
-        run_data["id"] = f'"{form.name}"' if form.name else str(form.form_id)
+        run_data["id"] = str(form.form_id)
+        run_data["name"] = f'"{form.name}"' if form.name else str(form.form_id)
         runs_data.append(run_data)
 
     return (group_data, runs_data)

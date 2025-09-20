@@ -1,8 +1,8 @@
 services:
   web:
     build: .
-    ports:
-      - "8000:8000"
+    expose:
+      - 8000
     restart: "unless-stopped"
     develop:
       watch:
@@ -12,6 +12,7 @@ services:
     user: "57439:57439"
     volumes:
       - user_uploads:/home/mambauser/prod/user_uploads:z
+      - static_volume:/home/mambauser/prod/staticfiles:z
     environment:
       - NPM_BIN_PATH=/home/mambauser/.nvm/versions/node/v22.19.0/bin/npm
     depends_on:
@@ -45,7 +46,18 @@ services:
       image: "redis:alpine"
       ports:
         - '6379:6379'
+  
+  nginx:
+    build: ./nginx
+    ports:
+      - 8080:80
+    volumes:
+      - user_uploads:/user_uploads:z
+      - static_volume:/static:z
+    depends_on:
+      - web
 
 volumes:
   postgres_data:
   user_uploads:
+  static_volume:

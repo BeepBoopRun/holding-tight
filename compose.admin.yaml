@@ -1,5 +1,7 @@
 services:
   web:
+    ports:
+      - "8000:8000" 
     command: >
       sh -c '
         ls -Zd user_uploads
@@ -11,3 +13,4 @@ services:
         echo "STARTING THE SERVER" &&
         micromamba run python manage.py tailwind dev
       '    
+  nginx: !reset

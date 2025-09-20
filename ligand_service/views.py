@@ -3,8 +3,10 @@ import uuid
 
 
 from django.http import HttpResponseRedirect
+from django.http.response import HttpResponseBadRequest
 from django.shortcuts import render
 from django.conf import settings
+from django.http import FileResponse, Http404
 
 from .models import Submission, SubmissionTask
 from .forms import FileInputFormSet, InputDetails
@@ -84,7 +86,9 @@ def form(request):
                 value=form.cleaned_data["value"],
                 name=form.cleaned_data["name"],
             ).save()
-    queue_task(submission, task_type=SubmissionTask.TaskType.INTERACTIONS)
+        queue_task(submission, task_type=SubmissionTask.TaskType.INTERACTIONS)
+    else:
+        return HttpResponseBadRequest()
 
 #    if not compare_by_residue:
 #        queue_task(submission, task_type=SubmissionTask.TaskType.NUMBERING)
@@ -136,3 +140,10 @@ def search(request, job_id):
             "name_VOI": submission.name_VOI,
         },
     )
+
+def download_file(request, filepath):
+    filepath = Path("./user_uploads/" + filepath)
+    if filepath.is_file():
+        return FileResponse(open(filepath, 'rb'), as_attachment=True, filename=filepath.name)
+    else:
+        raise Http404("File does not exist")
