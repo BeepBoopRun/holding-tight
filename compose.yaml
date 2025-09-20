@@ -9,6 +9,23 @@ services:
         - action: sync
           path: .
           target: /home/mambauser/prod
+    user: "57439:57439"
+    volumes:
+      - user_uploads:/home/mambauser/prod/user_uploads
+    environment:
+      - NPM_BIN_PATH=/home/mambauser/.nvm/versions/node/v22.19.0/bin/npm
+    depends_on:
+      - db
+  
+  db:
+    image: postgres:17.6
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=ligand_user
+      - POSTGRES_PASSWORD=ligand_passwd
+      - POSTGRES_DB=ligand_db
+
   huey:
     build: .
     command: micromamba run python manage.py run_huey
@@ -18,3 +35,17 @@ services:
         - action: sync+restart
           path: ./ligand_service/tasks.py
           target: /home/mambauser/prod/ligand_service/tasks.py
+    user: "57439:57439"
+    volumes:
+      - user_uploads:/home/mambauser/prod/user_uploads
+    depends_on:
+      - redis
+
+  redis:
+      image: "redis:alpine"
+      ports:
+        - '6379:6379'
+
+volumes:
+  postgres_data:
+  user_uploads:

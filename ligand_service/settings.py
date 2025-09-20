@@ -56,7 +56,11 @@ if DEBUG:
     INSTALLED_APPS += ["django_browser_reload"]
 
 TAILWIND_APP_NAME = "theme"
-NPM_BIN_PATH = "/home/mambauser/.nvm/versions/node/v22.19.0/bin/npm"
+
+NPM_BIN_PATH = os.environ.get(
+    "NPM_BIN_PATH",
+    "npm",
+)
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -101,11 +105,15 @@ WSGI_APPLICATION = "ligand_service.wsgi.application"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
-}
+        "default": {
+            "ENGINE": os.environ.get("SQL_ENGINE", "django.db.backends.sqlite3"),
+            "NAME": os.environ.get("SQL_DATABASE", BASE_DIR / "db.sqlite3"),
+            "USER": os.environ.get("SQL_USER", "user"),
+            "PASSWORD": os.environ.get("SQL_PASSWORD", "password"),
+            "HOST": os.environ.get("SQL_HOST", "localhost"),
+            "PORT": os.environ.get("SQL_PORT", "5432"),
+            }
+        }
 
 
 # Password validation
@@ -155,12 +163,23 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 HUEY = {
-    "huey_class": "huey.SqliteHuey",  # Huey implementation to use.
-    "name": "task_queue_db",  # Use db name for huey.
+    "huey_class": "huey.RedisHuey",  # Huey implementation to use.
+    'name': DATABASES['default']['NAME'],
     "results": True,  # Store return values of tasks.
     "store_none": False,  # If a task returns None, do not save to results.
     "immediate": False,  # If DEBUG=True, run synchronously.
     "utc": True,  # Use UTC for all times internally.
+    'connection': {
+        'host': 'redis',
+        'port': 6379,
+        'db': 0,
+        'connection_pool': None,  # Definitely you should use pooling!
+        # ... tons of other options, see redis-py for details.
+
+        # huey-specific connection parameters.
+        'read_timeout': 1,  # If not polling (blocking pop), use timeout.
+        'url': None,  # Allow Redis config via a DSN.
+    },
     "consumer": {
         "workers": 1,
         "worker_type": "process",

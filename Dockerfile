@@ -4,6 +4,7 @@ USER root
 RUN apt-get update && apt-get install curl -y
 
 USER $MAMBA_USER
+RUN id
 ENV NVM_DIR=/home/$MAMBA_USER/.nvm
 RUN mkdir -p $NVM_DIR \
     && curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash \
@@ -27,6 +28,5 @@ RUN micromamba run python /home/$MAMBA_USER/prod/setup/getchebi.py
 COPY --chown=$MAMBA_USER:$MAMBA_USER . .
 ENV ENV_NAME=base
 ENV PYTHONUNBUFFERED=1
-RUN micromamba run python manage.py migrate
 
 CMD ["micromamba", "run", "sh", "docker_entrypoint.sh"]
