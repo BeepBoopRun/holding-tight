@@ -2,6 +2,8 @@ FROM mambaorg/micromamba:2.3.0
 
 USER root
 RUN apt-get update && apt-get install curl -y
+RUN mkdir -p /home/$MAMBA_USER/prod/user_uploads
+RUN chown -R 57439:57439 /home/$MAMBA_USER
 
 USER $MAMBA_USER
 RUN id
@@ -16,6 +18,7 @@ RUN mkdir -p $NVM_DIR \
 ENV PATH=$NVM_DIR/versions/node/v22.19.0/bin/:$PATH
 
 WORKDIR /home/$MAMBA_USER/prod
+
 COPY --chown=$MAMBA_USER:$MAMBA_USER ./env.yaml env.yaml
 
 RUN micromamba install -y -n base -f ./env.yaml && \

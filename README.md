@@ -2,7 +2,7 @@
 Start by cloning the repository:
 
 ```bash
-git clone --recursive https://github.com/BeepBoopRun/holding-tight
+git clone https://github.com/BeepBoopRun/holding-tight
 ```
 
 To get the server running ASAP, do:

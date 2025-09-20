@@ -11,7 +11,7 @@ services:
           target: /home/mambauser/prod
     user: "57439:57439"
     volumes:
-      - user_uploads:/home/mambauser/prod/user_uploads
+      - user_uploads:/home/mambauser/prod/user_uploads:z
     environment:
       - NPM_BIN_PATH=/home/mambauser/.nvm/versions/node/v22.19.0/bin/npm
     depends_on:
@@ -37,7 +37,7 @@ services:
           target: /home/mambauser/prod/ligand_service/tasks.py
     user: "57439:57439"
     volumes:
-      - user_uploads:/home/mambauser/prod/user_uploads
+      - user_uploads:/home/mambauser/prod/user_uploads:z
     depends_on:
       - redis
 
