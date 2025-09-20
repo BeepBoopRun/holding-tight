@@ -29,6 +29,7 @@ def handle_uploaded_file(file_handle, path_to_save_location: Path):
 
 
 def form(request):
+    print("FORM SUBMISSION RECEIVED!", flush=True)
     if request.method == "POST":
         formset = FileInputFormSet(request.POST, request.FILES, prefix="submit")
         details_form = InputDetails(request.POST)
@@ -53,6 +54,7 @@ def form(request):
             name_VOI=name_VOI,
         )
         submission.save()
+        print("CREATED SUBMISSION!", flush=True)
         for idx, form in enumerate(formset):
             if not form.is_valid():
                 print("INVALID FORM!!".center(20, "-"), flush=True)
