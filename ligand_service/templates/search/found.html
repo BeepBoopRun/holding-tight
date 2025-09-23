@@ -19,6 +19,49 @@
     }
 </script>
 
+{% if DEBUG %}
+<div>
+    <button class="text-xl border rounded-lg p-2 bg-indigo-100 hover:bg-indigo-200 mt-1 w-full text-left hover:cursor-pointer">
+	DEVELOPMENT TOOLS (DON'T SHOW IN PRODUCTION)
+    </button>
+    <div class="space-y-2">
+	<button class="bg-red-400 w-fit border p-2 rounded hover:cursor-pointer"
+	    data-action="/dev/resubmit/{{ job_id }}"
+	    onclick="sendRequest(event)">
+	    RESUBMIT FORM
+	</button>
+
+	<button class="bg-red-400 w-fit border p-2 rounded hover:cursor-pointer"
+	    data-action="/dev/reanalyze-plip/{{ job_id }}"
+	    onclick="sendRequest(event)">
+	    REANALYZE PLIP RESULTS
+	</button>
+
+	<button class="bg-red-400 w-fit border p-2 rounded hover:cursor-pointer"
+	    data-action="/dev/redo-graphs/{{ job_id }}"
+	    onclick="sendRequest(event)">
+	    REDO GRAPHS
+	</button>
+    </div>
+
+    <script>
+	async function sendRequest(event) {
+	    const url = event.target.getAttribute("data-action");
+	    try {
+		const res = await fetch(url, {
+		    method: "POST",
+		});
+	    }
+	    catch {
+		console.log("DEVELOPER REQUEST FAILED!")
+	    }
+	    window.location.reload();
+	}
+
+    </script>
+</div>
+{% endif %}
+
 <div>
     <button class="text-xl border rounded-lg p-2 bg-indigo-100 hover:bg-indigo-200 mt-1 w-full text-left hover:cursor-pointer" onclick="showContent(event)">
 	Submission information

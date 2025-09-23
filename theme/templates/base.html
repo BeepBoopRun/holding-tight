@@ -15,12 +15,28 @@
     <body class="text-black font-mono w-screen min-h-screen overflow-x-hidden">
 	<!-- Firefox Flash Of Unstyled Content Fix -->
 	<script>0</script>
-	<nav id="topnav" class="top-0 z-30 bg-indigo-400  border-b lg:px-32 py-2 w-screen opacity-85">
+	<script>
+	    function downloadLogs(event, logfile) {
+		request_url = `/download/${logfile}`;
+		const link = document.createElement("a");
+		link.href = request_url;
+		link.download = logfile;
+		link.click();
+	    }
+	</script>
+	<nav id="topnav" class="top-0 z-30 bg-indigo-400 border-b lg:px-32 py-2 w-screen opacity-85">
 	    <ul class="flex font-medium items-center">
 		<li class="">
 		    <a href="/" class="m-0 p-0 text-xl font-thin">
-			(logo here) CORAL-MD: Correlational Analysis of Ligand-Protein interactions	
+			<img class="inline size-10" src="{% static 'ligand_service/coral_logo_v1.svg' %}">
+			</img>
+			CORAL-MD: Correlational Analysis of Ligand-Protein interactions	
 		    </a>
+		</li>
+		<li>
+		    <button class="text-xl border rounded-lg p-2 m-2 bg-red-100 hover:bg-red-200 mt-1 hover:cursor-pointer" onclick="downloadLogs(event, 'webserver.log')">
+			Download webserver logs
+		    </button>
 		</li>
 		<li class="ml-auto">
 		    <a href="/submit/" class="flex items-center gap-2 m-2 px-2 p-2 text-gray-900 rounded-lg border-dotted ring-2 ring-purple-900 bg-indigo-400 hover:bg-indigo-500">

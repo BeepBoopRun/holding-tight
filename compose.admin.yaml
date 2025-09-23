@@ -1,5 +1,10 @@
 services:
   web:
+    develop:
+      watch: !override
+        - action: sync
+          path: .
+          target: /home/mambauser/prod
     ports:
       - "8000:8000" 
     command: >

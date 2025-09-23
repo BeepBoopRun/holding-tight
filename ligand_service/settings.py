@@ -35,7 +35,7 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "") != "False"
 ALLOWED_HOSTS = ["*"]
 
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:8080",
+    "http://localhost:8000",
 ]
 
 # Application definition
@@ -48,7 +48,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "huey.contrib.djhuey",
-    "django_tables2",
     "tailwind",
     "theme",
     "widget_tweaks",
@@ -104,6 +103,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "ligand_service.wsgi.application"
 
 
+
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
@@ -118,6 +118,28 @@ DATABASES = {
             }
         }
 
+LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "verbose": {
+                "format": "{levelname} {asctime} {module} {process:d} {message}",
+                "style": "{",
+                           },
+                },
+            "handlers": {
+                "file": {
+                    "level": "INFO",
+                    "class": "logging.FileHandler",
+                    "filename": f"{BASE_DIR}/user_uploads/webserver.log",
+                    "formatter": "verbose",
+                    },
+                },
+            "root": {
+                "handlers": ["file"],
+                "level": "INFO",
+                },
+            }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

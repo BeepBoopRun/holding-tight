@@ -2,11 +2,11 @@ services:
   web:
     build: .
     expose:
-      - 8000
+      - 8080
     restart: "unless-stopped"
     develop:
       watch:
-        - action: sync
+        - action: sync+restart
           path: .
           target: /home/mambauser/prod
     user: "57439:57439"
@@ -20,6 +20,7 @@ services:
   
   db:
     image: postgres:17.6
+    restart: "unless-stopped"
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
@@ -44,18 +45,25 @@ services:
 
   redis:
       image: "redis:alpine"
+      restart: "unless-stopped"
       ports:
         - '6379:6379'
   
   nginx:
     build: ./nginx
     ports:
-      - 8080:80
+      - 8000:80
     volumes:
       - user_uploads:/user_uploads:z
       - static_volume:/static:z
     depends_on:
       - web
+    restart: "unless-stopped"
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./nginx/nginx.conf
+          target: /etc/nginx/conf.d
 
 volumes:
   postgres_data:

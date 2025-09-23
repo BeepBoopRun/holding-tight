@@ -355,6 +355,13 @@ def analyse_submission(submission: Submission):
         run_data["name"] = f'"{form.name}"' if form.name else str(form.form_id)
         runs_data.append(run_data)
 
+    results_path = submission.get_results_directy()
+    with open(results_path / "group_data.json", "w") as f:
+        json.dump(group_data, f)
+
+    with open(results_path / "runs_data.json", "w") as f:
+        json.dump(runs_data, f)
+
     return (group_data, runs_data)
 
 
@@ -366,12 +373,14 @@ def queue_task(submission: Submission, task_type: SubmissionTask.TaskType):
         queue_interactions(task)
     elif task_type == SubmissionTask.TaskType.NUMBERING:
         queue_numbering(task)
+    elif task_type == SubmissionTask.TaskType.ANALYSIS:
+        queue_analysis(task)
     else:
         # unreachable
         assert False
 
-
 # could be written better to make less db calls
+
 @db_task()
 def queue_interactions(task: SubmissionTask):
     task.status = "R"
@@ -386,6 +395,19 @@ def queue_interactions(task: SubmissionTask):
     task.status = "S"
     task.save()
 
+@db_task()
+def queue_analysis(task: SubmissionTask):
+    task.status = "R"
+    task.save()
+    try:
+        analyse_submission(task.submission)
+    except Exception as e:
+        print(f"Analysis failed! Error: {e}")
+        task.status = "F"
+        task.save()
+        return
+    task.status = "S"
+    task.save()
 
 @db_task()
 def queue_numbering(task: SubmissionTask):

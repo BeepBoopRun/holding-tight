@@ -61,6 +61,7 @@ class SubmissionTask(models.Model):
     class TaskType(models.TextChoices):
         NUMBERING = "N", "Numbering"
         INTERACTIONS = "I", "Calculating interactions"
+        ANALYSIS = "A", "Analysing interaction results"
 
     task_type = models.CharField(max_length=1, choices=TaskType)
 

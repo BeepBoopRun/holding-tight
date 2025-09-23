@@ -1,5 +1,7 @@
 from pathlib import Path
 import uuid
+import json
+import logging
 
 
 from django.http import HttpResponseRedirect
@@ -11,7 +13,9 @@ from django.http import FileResponse, Http404
 from .models import Submission, SubmissionTask
 from .forms import FileInputFormSet, InputDetails
 from .models import SubmittedForm
-from .tasks import analyse_submission, queue_task
+from .tasks import queue_task
+
+logger = logging.getLogger(__name__)
 
 
 def submit(request):
@@ -29,8 +33,9 @@ def handle_uploaded_file(file_handle, path_to_save_location: Path):
 
 
 def form(request):
-    print("FORM SUBMISSION RECEIVED!", flush=True)
+    logger.info(f"Form submission request received, headers: {request.headers}")
     if request.method == "POST":
+        logger.info("Form submission method is POST")
         formset = FileInputFormSet(request.POST, request.FILES, prefix="submit")
         details_form = InputDetails(request.POST)
 
@@ -38,10 +43,14 @@ def form(request):
         compare_by_residue = None
         name_VOI = None
 
+        logger.info("Checking for valid details form...")
         if details_form.is_valid():
             user_email = details_form.cleaned_data["email"]
             compare_by_residue = details_form.cleaned_data["compare_by_residue"]
             name_VOI = details_form.cleaned_data["name_VOI"]
+            logger.info("Details form is valid")
+        else:
+            logger.info("Details form is NOT valid")
 
         submission_id = uuid.uuid4()
         submission_path = Path(settings.MEDIA_ROOT).joinpath(str(submission_id))
@@ -54,11 +63,10 @@ def form(request):
             name_VOI=name_VOI,
         )
         submission.save()
-        print("CREATED SUBMISSION!", flush=True)
+        logger.info(f"Created a submission object: {submission_id}")
         for idx, form in enumerate(formset):
             if not form.is_valid():
-                print("INVALID FORM!!".center(20, "-"), flush=True)
-                print(form.errors, flush=True)
+                logger.warning(f"Form {idx} is not valid!: {form.errors}")
                 break
             form_path = submission_path.joinpath(str(idx))
             print(f"FORM {idx}")
@@ -89,12 +97,11 @@ def form(request):
                 name=form.cleaned_data["name"],
             ).save()
         queue_task(submission, task_type=SubmissionTask.TaskType.INTERACTIONS)
+        queue_task(submission, task_type=SubmissionTask.TaskType.ANALYSIS)
     else:
+        logger.warning(f"Form submission method is {request.method}, sending BadRequest response")
         return HttpResponseBadRequest()
-
-#    if not compare_by_residue:
-#        queue_task(submission, task_type=SubmissionTask.TaskType.NUMBERING)
-#
+    logger.info(f"Submission form is valid, redirecting to /search/{submission_id}")
     return HttpResponseRedirect(f"/search/{submission_id}")
 
 
@@ -129,8 +136,12 @@ def search(request, job_id):
             {"job_id": job_id, "tasks": tasks},
         )
 
-    group_data, runs_data = analyse_submission(submission)
+    results_path = submission.get_results_directy()
+    with open(results_path / "group_data.json") as f:
+        group_data = json.load(f)
 
+    with open(results_path / "runs_data.json") as f:
+        runs_data = json.load(f)
 
     return render(
         request,
@@ -140,6 +151,7 @@ def search(request, job_id):
             "runs_data": runs_data,
             "group_data": group_data,
             "name_VOI": submission.name_VOI,
+            "DEBUG": settings.DEBUG
         },
     )
 

@@ -9,8 +9,6 @@ To get the server running ASAP, do:
 ```bash
 docker compose up
 ```
-To see the site, go to *localhost:8080*.
-
 For development, do:
 ```bash
 docker compose -f compose.yaml -f compose.admin.yaml up --watch --build

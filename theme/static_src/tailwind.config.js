@@ -11,5 +11,4 @@ module.exports = {
         // Include Python files that might contain Tailwind CSS classes
         '../../**/*.py'
     ],
-    ...
-}
+};

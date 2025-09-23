@@ -31,6 +31,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 	xhr.addEventListener("load", function () {
 	    console.log("Sending complete!");
+	    console.log(xhr.response)
 	    window.location.href = xhr.responseURL;
 	});
 
