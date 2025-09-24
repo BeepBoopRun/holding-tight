@@ -4,23 +4,22 @@ from pathlib import Path
 import json
 
 from django.utils import timezone
-from django.conf import settings
 from huey.contrib.djhuey import db_task
 import plotly.express as px
 import pandas as pd
 import plotly.graph_objects as go
-from rdkit.Chem import Draw, inchi
+from rdkit.Chem import Draw
 from rdkit import Chem
 import xmltodict
 import numpy as np
 
-from .models import Submission, SubmissionTask, SubmittedForm
+from .models import Submission, SubmissionTask
 from .contacts import (
     get_numbering,
     get_pdb,
     get_trajectory_frame_count,
     create_translation_dict_by_blast,
-    get_interactions_from_trajectory
+    get_interactions_from_trajectory,
 )
 
 PAGE_BG_COLOR = "#e5e7eb"
@@ -28,6 +27,7 @@ COMMON_LAYOUT = dict(margin=dict(l=0, r=0, t=0, b=0), paper_bgcolor=PAGE_BG_COLO
 LIGAND_DETECTION_THRESHOLD = 0.7
 INCHIKEY_TO_NAME_JSON_PATH = Path("./chebi/inchikey_to_name.json")
 INCHIKEY_TO_CHEBIID_JSON_PATH = Path("./chebi/inchikey_to_chebiID.json")
+
 
 def save_file(file_handle, path_to_save_location: Path):
     with open(path_to_save_location, "wb+") as destination:
@@ -44,11 +44,16 @@ def find_interactions(submission: Submission):
         files = form.get_trajectory_files()
         file_id = str(form.form_id)
         get_interactions_from_trajectory(
-                topology_file=files.topology,
-                trajectory_file=files.trajectory,
-                workdir=results_dir / f"interactions_data_{file_id}",
-                frames=[x for x in range(get_trajectory_frame_count(files.topology, files.trajectory))]
+            topology_file=files.topology,
+            trajectory_file=files.trajectory,
+            workdir=results_dir / f"interactions_data_{file_id}",
+            frames=[
+                x
+                for x in range(
+                    get_trajectory_frame_count(files.topology, files.trajectory)
                 )
+            ],
+        )
     print("Getting interactions from PLIP finished!", flush=True)
 
     submission.finished_at = timezone.now()
@@ -73,24 +78,26 @@ def prepare_numbering_pdb(submission: Submission):
     print("Numbering PDB files complete", flush=True)
 
 
-def extract_data_from_plip_results(results_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame] | None:
+def extract_data_from_plip_results(
+    results_dir: Path,
+) -> tuple[pd.DataFrame, pd.DataFrame] | None:
     frames_data = {
-        "frame" : [],
-        "interaction_type" : [],
-        "residue_chain" : [],
-        "residue_name" : [],
-        "residue_number" : [],
-        "lig_residue_chain" : [],
-        "lig_residue_name" : [],
-        "lig_residue_number" : [],
+        "frame": [],
+        "interaction_type": [],
+        "residue_chain": [],
+        "residue_name": [],
+        "residue_number": [],
+        "lig_residue_chain": [],
+        "lig_residue_name": [],
+        "lig_residue_number": [],
     }
     ligand_info = {
-            "frames_seen": [],
-            "name": [],
-            "ligtype": [],
-            "smiles": [],
-            "inchikey": [],
-            "img": [],
+        "frames_seen": [],
+        "name": [],
+        "ligtype": [],
+        "smiles": [],
+        "inchikey": [],
+        "img": [],
     }
     for dir in sorted(results_dir.iterdir(), key=lambda x: (len(str(x)), x)):
         if not dir.is_dir():
@@ -98,22 +105,22 @@ def extract_data_from_plip_results(results_dir: Path) -> tuple[pd.DataFrame, pd.
         with open(dir / "report.xml") as f:
             file_contents = f.read()
             out = xmltodict.parse(file_contents)
-            binding_sites = out['report']['bindingsite']
+            binding_sites = out["report"]["bindingsite"]
             # handling of instance, where there is only one binding site
             if not isinstance(binding_sites, list):
                 binding_sites = [binding_sites]
             for binding_site in binding_sites:
-                if binding_site['@has_interactions'] == 'False':
-                    print('Skipping binding_site:', binding_site)
+                if binding_site["@has_interactions"] == "False":
+                    print("Skipping binding_site:", binding_site)
                     continue
-                ident = binding_site['identifiers']
-                interactions = binding_site['interactions']
+                ident = binding_site["identifiers"]
+                interactions = binding_site["interactions"]
                 inchikey = ident["inchikey"]
                 if inchikey in ligand_info["inchikey"]:
                     idx = ligand_info["inchikey"].index(inchikey)
                     ligand_info["frames_seen"][idx] += 1
                 else:
-                    print(f"Adding new ligand", inchikey, flush=True)
+                    print("Adding new ligand", inchikey, flush=True)
                     ligand_info["frames_seen"].append(1)
                     ligand_info["name"].append(ident["longname"])
                     ligand_info["ligtype"].append(ident["ligtype"])
@@ -141,17 +148,22 @@ def extract_data_from_plip_results(results_dir: Path) -> tuple[pd.DataFrame, pd.
                         for value in contacts:
                             frames_data["frame"].append(int(dir.stem[5:]))
                             frames_data["interaction_type"].append(interaction_type)
-                            frames_data["residue_chain"].append(value['reschain'])
-                            frames_data["residue_number"].append(value['resnr'])
-                            frames_data["residue_name"].append(value['restype'])
-                            frames_data["lig_residue_chain"].append(value['reschain_lig'])
-                            frames_data["lig_residue_name"].append(value['resnr_lig'])
-                            frames_data["lig_residue_number"].append(value['restype_lig'])
+                            frames_data["residue_chain"].append(value["reschain"])
+                            frames_data["residue_number"].append(value["resnr"])
+                            frames_data["residue_name"].append(value["restype"])
+                            frames_data["lig_residue_chain"].append(
+                                value["reschain_lig"]
+                            )
+                            frames_data["lig_residue_name"].append(value["resnr_lig"])
+                            frames_data["lig_residue_number"].append(
+                                value["restype_lig"]
+                            )
 
     frame_df = pd.DataFrame(frames_data)
     ligand_df = pd.DataFrame(ligand_info)
     ligand_df.drop_duplicates(inplace=True)
     return frame_df, ligand_df
+
 
 def create_getcontacts_table(get_contacts_df: pd.DataFrame) -> str:
     fig = go.Figure(
@@ -207,35 +219,63 @@ def create_interaction_area_graph(contacts_df: pd.DataFrame) -> str:
     )
     return graph
 
+
 def hex2rgba(hexcol, a):
-    return f"rgba({int(hexcol[1:3],16)},{int(hexcol[3:5],16)},{int(hexcol[5:7],16)},{a})"
+    return f"rgba({int(hexcol[1:3], 16)},{int(hexcol[3:5], 16)},{int(hexcol[5:7], 16)},{a})"
+
 
 def create_time_resolved_map(contacts_df: pd.DataFrame) -> str:
-    sub_df = contacts_df[["frame", "residue_name", "residue_number", "interaction_type"]]
-    sub_df["residue_label"] = sub_df["residue_name"].astype(str) + "_" + sub_df["residue_number"].astype(str)
+    sub_df = contacts_df[
+        ["frame", "residue_name", "residue_number", "interaction_type"]
+    ]
+    sub_df["residue_label"] = (
+        sub_df["residue_name"].astype(str) + "_" + sub_df["residue_number"].astype(str)
+    )
 
-    residues = sorted(sub_df["residue_label"].unique(), key=lambda s:int(s.split("_")[-1]))
-    frames = np.arange(sub_df["frame"].min(), sub_df["frame"].max()+1)
+    residues = sorted(
+        sub_df["residue_label"].unique(), key=lambda s: int(s.split("_")[-1])
+    )
+    frames = np.arange(sub_df["frame"].min(), sub_df["frame"].max() + 1)
 
-    types = ["water_bridges",
+    types = [
+        "water_bridges",
         "hydrophobic_interactions",
-        "pi_stacks",            #UWAGA: może zmienimy na pi_pi_stacking?
+        "pi_stacks",  # UWAGA: może zmienimy na pi_pi_stacking?
         "pi_cation_interactions",
         "hydrogen_bonds",
         "halogen_bonds",
-        "salt_bridges"]
+        "salt_bridges",
+    ]
 
-    colors = ["#B0B0B0","#8da0cb","#66c2a5","#a6d854","#ffd92f", "#fc8d62","#e78ac3"]
+    colors = [
+        "#B0B0B0",
+        "#8da0cb",
+        "#66c2a5",
+        "#a6d854",
+        "#ffd92f",
+        "#fc8d62",
+        "#e78ac3",
+    ]
 
-    counts = (sub_df
-          .groupby(["residue_label","frame","interaction_type"])
-          .size()
-          .rename("n")
-          .reset_index())
-    counts = counts.pivot_table(index=["residue_label","frame"], columns="interaction_type", values="n", fill_value=0)
+    counts = (
+        sub_df.groupby(["residue_label", "frame", "interaction_type"])
+        .size()
+        .rename("n")
+        .reset_index()
+    )
+    counts = counts.pivot_table(
+        index=["residue_label", "frame"],
+        columns="interaction_type",
+        values="n",
+        fill_value=0,
+    )
     counts = counts.reindex(columns=types, fill_value=0)
-    counts = counts.reindex(pd.MultiIndex.from_product([residues, frames], names=["residue_label","frame"]),
-                    fill_value=0)
+    counts = counts.reindex(
+        pd.MultiIndex.from_product(
+            [residues, frames], names=["residue_label", "frame"]
+        ),
+        fill_value=0,
+    )
 
     vals = counts.values.reshape(len(residues), len(frames), len(types))
 
@@ -253,26 +293,50 @@ def create_time_resolved_map(contacts_df: pd.DataFrame) -> str:
         "salt_bridges: %{customdata[6]}<extra></extra>"
     )
 
-
     for k, t in enumerate(types):
         presence = (vals[..., k] > 0).astype(float)
-        fig.add_trace(go.Heatmap(
-            z=presence, x=frames, y=residues,
-            zmin=0, zmax=1, showscale=False, showlegend=False,
-            colorscale=[[0.0, hex2rgba(colors[k], 0.0)], [1.0, hex2rgba(colors[k], 1.0)]],
-            name=t, legendgroup=t, customdata=vals, hovertemplate=hovertemplate
-        ))
+        fig.add_trace(
+            go.Heatmap(
+                z=presence,
+                x=frames,
+                y=residues,
+                zmin=0,
+                zmax=1,
+                showscale=False,
+                showlegend=False,
+                colorscale=[
+                    [0.0, hex2rgba(colors[k], 0.0)],
+                    [1.0, hex2rgba(colors[k], 1.0)],
+                ],
+                name=t,
+                legendgroup=t,
+                customdata=vals,
+                hovertemplate=hovertemplate,
+            )
+        )
 
     for k, t in enumerate(types):
-        fig.add_trace(go.Scatter(
-            x=[None], y=[None], mode="markers",
-            marker=dict(color=colors[k], size=10),
-            name=t, legendgroup=t, showlegend=True,
-            hoverinfo="skip"
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=[None],
+                y=[None],
+                mode="markers",
+                marker=dict(color=colors[k], size=10),
+                name=t,
+                legendgroup=t,
+                showlegend=True,
+                hoverinfo="skip",
+            )
+        )
 
     fig.update_layout(xaxis=dict(rangeslider=dict(visible=True), type="linear"))
-    fig.update_layout(COMMON_LAYOUT, plot_bgcolor=PAGE_BG_COLOR, xaxis_title="Frame", yaxis_title="Residue", height = 700)
+    fig.update_layout(
+        COMMON_LAYOUT,
+        plot_bgcolor=PAGE_BG_COLOR,
+        xaxis_title="Frame",
+        yaxis_title="Residue",
+        height=700,
+    )
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=False)
 
@@ -287,13 +351,19 @@ def create_time_resolved_map(contacts_df: pd.DataFrame) -> str:
 inchikey_to_name = {}
 inchikey_to_chebiID = {}
 
-if not INCHIKEY_TO_CHEBIID_JSON_PATH.is_file() or not INCHIKEY_TO_NAME_JSON_PATH.is_file():
-    print("Files from ChEBI are not available, please run 'python manage.py getchebi' before starting the server.")
+if (
+    not INCHIKEY_TO_CHEBIID_JSON_PATH.is_file()
+    or not INCHIKEY_TO_NAME_JSON_PATH.is_file()
+):
+    print(
+        "Files from ChEBI are not available, please run 'python manage.py getchebi' before starting the server."
+    )
 else:
     with open(INCHIKEY_TO_NAME_JSON_PATH) as f:
         inchikey_to_name = json.load(f)
     with open(INCHIKEY_TO_CHEBIID_JSON_PATH) as f:
         inchikey_to_chebiID = json.load(f)
+
 
 def analyse_submission(submission: Submission):
     results_path = submission.get_results_directy()
@@ -303,7 +373,9 @@ def analyse_submission(submission: Submission):
     for form in submission.submittedform_set.all():
         run_data = {}
         file_id = str(form.form_id)
-        out = extract_data_from_plip_results(results_path / f"interactions_data_{file_id}" / "results")
+        out = extract_data_from_plip_results(
+            results_path / f"interactions_data_{file_id}" / "results"
+        )
         if out is None:
             continue
         df = out[0]
@@ -311,41 +383,65 @@ def analyse_submission(submission: Submission):
         # preparing interaction display
         if submission.common_numbering:
             files = form.get_trajectory_files()
-#            dic = create_translation_dict_by_pdb(results_path / f"num_top{file_id}.pdb")
-#
-#            def get_numbering_pdb(row):
-#                assert dic is not None
-#                key = (row['residue_chain'], row['residue_name'], str(row['residue_number']))
-#                if key in dic:
-#                    return dic[key][1]
-#
-#            df["PDB numbering"] = df.apply(get_numbering_pdb, axis=1)
-#            print(df, flush=True)
-#
-            dic, scores = create_translation_dict_by_blast(files.topology, files.trajectory)
+            #            dic = create_translation_dict_by_pdb(results_path / f"num_top{file_id}.pdb")
+            #
+            #            def get_numbering_pdb(row):
+            #                assert dic is not None
+            #                key = (row['residue_chain'], row['residue_name'], str(row['residue_number']))
+            #                if key in dic:
+            #                    return dic[key][1]
+            #
+            #            df["PDB numbering"] = df.apply(get_numbering_pdb, axis=1)
+            #            print(df, flush=True)
+            #
+            dic, scores = create_translation_dict_by_blast(
+                files.topology, files.trajectory
+            )
             run_data["alignment_scores"] = scores
 
             def get_numbering_blast(row):
                 assert dic is not None
-                key = (row['residue_chain'], row['residue_name'], str(row['residue_number']))
+                key = (
+                    row["residue_chain"],
+                    row["residue_name"],
+                    str(row["residue_number"]),
+                )
                 if key in dic:
                     return dic[key]
 
             df["BLAST numbering"] = df.apply(get_numbering_blast, axis=1)
             run_data["interaction_graph"] = create_interaction_area_graph(df)
-            df.to_csv(path_or_buf=(results_path / f"result{file_id}_aggregated.csv"), index=False)
+            df.to_csv(
+                path_or_buf=(results_path / f"result{file_id}_aggregated.csv"),
+                index=False,
+            )
             print(f"Dataframe from form {file_id} is saved!", flush=True)
         # preparing ligand information display
-        
+
         for ligand in ligand_df.to_dict(orient="records"):
-            simulation_frame_count = get_trajectory_frame_count(*form.get_trajectory_files())
-            if ligand["frames_seen"] / simulation_frame_count  < LIGAND_DETECTION_THRESHOLD:
-                print(f"Skipping ligand below threshold, seen in {ligand["frames_seen"]} out of {simulation_frame_count}", flush=True)
+            simulation_frame_count = get_trajectory_frame_count(
+                *form.get_trajectory_files()
+            )
+            if (
+                ligand["frames_seen"] / simulation_frame_count
+                < LIGAND_DETECTION_THRESHOLD
+            ):
+                print(
+                    f"Skipping ligand below threshold, seen in {ligand['frames_seen']} out of {simulation_frame_count}",
+                    flush=True,
+                )
                 continue
             id = inchikey_to_chebiID.get(ligand["inchikey"], None)
             name = inchikey_to_name.get(ligand["inchikey"], None)
             ligands_arr = run_data.get("ligands", [])
-            ligands_arr.append({"id": id, "name": name, "img": ligand.get("img", ""), "frames_seen": ligand["frames_seen"]})
+            ligands_arr.append(
+                {
+                    "id": id,
+                    "name": name,
+                    "img": ligand.get("img", ""),
+                    "frames_seen": ligand["frames_seen"],
+                }
+            )
             run_data["ligands"] = ligands_arr
 
         run_data["table"] = create_getcontacts_table(df)
@@ -379,7 +475,9 @@ def queue_task(submission: Submission, task_type: SubmissionTask.TaskType):
         # unreachable
         assert False
 
+
 # could be written better to make less db calls
+
 
 @db_task()
 def queue_interactions(task: SubmissionTask):
@@ -395,6 +493,7 @@ def queue_interactions(task: SubmissionTask):
     task.status = "S"
     task.save()
 
+
 @db_task()
 def queue_analysis(task: SubmissionTask):
     task.status = "R"
@@ -408,6 +507,7 @@ def queue_analysis(task: SubmissionTask):
         return
     task.status = "S"
     task.save()
+
 
 @db_task()
 def queue_numbering(task: SubmissionTask):

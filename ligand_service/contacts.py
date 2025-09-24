@@ -1,22 +1,15 @@
-import base64
-from io import BytesIO
 import sys
 import os
 import subprocess as sb
 from pathlib import Path
-from typing import Any, NamedTuple
+from typing import Any
 import tempfile
-import shutil
 import datetime
 import re
 
-import pandas as pd
-import xmltodict
 import requests
 from vmd import molecule, atomsel
 from Bio import SearchIO
-from rdkit import Chem
-from rdkit.Chem import Draw
 
 from .models import GPCRdbResidueAPI
 
@@ -83,6 +76,7 @@ def get_sequence_chains(
             structure[chain] = {}
         structure[chain][residue_id] = THREE_TO_ONE.get(resname, "X")
     return structure
+
 
 def get_pdb(topology_file: Path, trajectory_file: Path, outfile: Path):
     molid = molecule.load(filetype(topology_file), str(topology_file))
@@ -231,8 +225,10 @@ def get_sequence(pdb: Path):
 def extract_uniprot_entry_name(target_description: str) -> str:
     return target_description.split("|")[1]
 
+
 def extract_uniprot_accession(target_description: str) -> str:
     return target_description.split("|")[0]
+
 
 def create_translation_dict_by_blast(
     topology: Path, trajectory: Path
@@ -301,6 +297,7 @@ def create_translation_dict_by_blast(
         result_dict = {**result_dict, **chain_result}
     return (result_dict, alignment_scores) if len(result_dict) > 0 else None
 
+
 def get_results_plip(pdbfiles: list[Path], outdir: Path | None = None):
     if outdir is not None:
         prev_wd = os.getcwd()
@@ -311,7 +308,8 @@ def get_results_plip(pdbfiles: list[Path], outdir: Path | None = None):
             "-v",
             "-x",
             "-f",
-        ] + pdbfiles,
+        ]
+        + pdbfiles,
         stdout=sb.PIPE,
         stderr=sb.STDOUT,
         text=True,
@@ -330,30 +328,53 @@ def get_results_plip(pdbfiles: list[Path], outdir: Path | None = None):
     print("PLIP: Done!")
     return process.returncode == 0
 
+
 def get_trajectory_frame_count(topology_file: Path, trajectory_file: Path):
     molid = molecule.load(filetype(topology_file), str(topology_file))
     num_frames = molecule.numframes(molid)
     print("Number of frames before loading trajectory", num_frames)
-    molecule.read(molid=molid,
-                  filetype=filetype(trajectory_file),
-                  filename=str(trajectory_file),
-                  waitfor=-1)
+    molecule.read(
+        molid=molid,
+        filetype=filetype(trajectory_file),
+        filename=str(trajectory_file),
+        waitfor=-1,
+    )
     return molecule.numframes(molid) - num_frames
 
-WATER_SYNONYMS = ["H2O", "HOH", "OH2", "HHO", "OHH", "TIP", "T3P", "T4P", "T5P", "SOL", "TIP2", "TIP3", "TIP4"] 
+
+WATER_SYNONYMS = [
+    "H2O",
+    "HOH",
+    "OH2",
+    "HHO",
+    "OHH",
+    "TIP",
+    "T3P",
+    "T4P",
+    "T5P",
+    "SOL",
+    "TIP2",
+    "TIP3",
+    "TIP4",
+]
 WATER_SELECTION = "("
 for syn in WATER_SYNONYMS:
     WATER_SELECTION += f"resname {syn} or "
 WATER_SELECTION = WATER_SELECTION[:-4] + ")"
 
 residue_map = {
-    "HIE": "HIS", "HIP": "HIS", "HID": "HIS",
-    "ASH": "ASP", "GLH": "GLU",
-    "CYX": "CYS", "CYM": "CYS"
+    "HIE": "HIS",
+    "HIP": "HIS",
+    "HID": "HIS",
+    "ASH": "ASP",
+    "GLH": "GLU",
+    "CYX": "CYS",
+    "CYM": "CYS",
 }
 
+
 def get_frames_from_trajectory(
-        topology_file: Path, trajectory_file: Path, outdir: Path, frames: list[int]
+    topology_file: Path, trajectory_file: Path, outdir: Path, frames: list[int]
 ) -> list[Path]:
     molid = molecule.load(filetype(topology_file), str(topology_file))
     num_frames = molecule.numframes(molid)
@@ -362,12 +383,14 @@ def get_frames_from_trajectory(
     if num_frames > 0:
         frames = [frame + num_frames for frame in frames]
 
-    molecule.read(molid=molid,
-                  filetype=filetype(trajectory_file),
-                  filename=str(trajectory_file),
-                  first=min(frames),
-                  last=max(frames),
-                  waitfor=-1)
+    molecule.read(
+        molid=molid,
+        filetype=filetype(trajectory_file),
+        filename=str(trajectory_file),
+        first=min(frames),
+        last=max(frames),
+        waitfor=-1,
+    )
 
     print("Number of frames after loading trajectory", molecule.numframes(molid))
 
@@ -381,29 +404,37 @@ def get_frames_from_trajectory(
         residues.resname = standard_name
 
     for frame in frames:
-        protein = atomsel("(not lipid) and (same fragment as (within 7 of protein))", molid=molid, frame=frame-offset)
+        protein = atomsel(
+            "(not lipid) and (same fragment as (within 7 of protein))",
+            molid=molid,
+            frame=frame - offset,
+        )
         outfile = str(outdir / f"frame{frame}.pdb")
-        molecule.write(molid=molid,
-                       filetype="pdb",
-                       filename=str(outdir / f"frame{frame}.pdb"),
-                       first=frame - offset,
-                       last=frame - offset,
-                       selection=protein)
+        molecule.write(
+            molid=molid,
+            filetype="pdb",
+            filename=str(outdir / f"frame{frame}.pdb"),
+            first=frame - offset,
+            last=frame - offset,
+            selection=protein,
+        )
         outfiles.append(outfile)
     return outfiles
 
+
 def get_interactions_from_trajectory(
-        topology_file: Path, trajectory_file: Path, workdir: Path, frames: list[int]
-        ):
+    topology_file: Path, trajectory_file: Path, workdir: Path, frames: list[int]
+):
     frames_dir = workdir / "frames"
     frames_dir.mkdir(parents=True)
     plip_dir = workdir / "results"
     plip_dir.mkdir(parents=True)
     print("Starting...")
     tick = datetime.datetime.now()
-    pdbs = get_frames_from_trajectory(topology_file, trajectory_file, frames_dir, frames)
+    pdbs = get_frames_from_trajectory(
+        topology_file, trajectory_file, frames_dir, frames
+    )
     get_results_plip(pdbs, plip_dir)
     tock = datetime.datetime.now()
     print("Done...")
-    print("Running time: ", (tock-tick))
-
+    print("Running time: ", (tock - tick))

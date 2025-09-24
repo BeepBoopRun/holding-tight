@@ -99,7 +99,9 @@ def form(request):
         queue_task(submission, task_type=SubmissionTask.TaskType.INTERACTIONS)
         queue_task(submission, task_type=SubmissionTask.TaskType.ANALYSIS)
     else:
-        logger.warning(f"Form submission method is {request.method}, sending BadRequest response")
+        logger.warning(
+            f"Form submission method is {request.method}, sending BadRequest response"
+        )
         return HttpResponseBadRequest()
     logger.info(f"Submission form is valid, redirecting to /search/{submission_id}")
     return HttpResponseRedirect(f"/search/{submission_id}")
@@ -138,7 +140,7 @@ def search(request, job_id):
 
     results_path = submission.get_results_directy()
     filenames = []
-    
+
     filenames = [None] * len(submission.submittedform_set.all())
 
     for dir in submission.get_main_directory().iterdir():
@@ -162,13 +164,16 @@ def search(request, job_id):
             "runs_data": runs_data,
             "group_data": group_data,
             "name_VOI": submission.name_VOI,
-            "DEBUG": settings.DEBUG
+            "DEBUG": settings.DEBUG,
         },
     )
+
 
 def download_file(request, filepath):
     filepath = Path("./user_uploads/" + filepath)
     if filepath.is_file():
-        return FileResponse(open(filepath, 'rb'), as_attachment=True, filename=filepath.name)
+        return FileResponse(
+            open(filepath, "rb"), as_attachment=True, filename=filepath.name
+        )
     else:
         raise Http404("File does not exist")

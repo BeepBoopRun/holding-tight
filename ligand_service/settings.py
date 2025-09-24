@@ -99,43 +99,42 @@ TEMPLATES = [
 WSGI_APPLICATION = "ligand_service.wsgi.application"
 
 
-
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-        "default": {
-            "ENGINE": os.environ.get("SQL_ENGINE", "django.db.backends.sqlite3"),
-            "NAME": os.environ.get("SQL_DATABASE", BASE_DIR / "db.sqlite3"),
-            "USER": os.environ.get("SQL_USER", "user"),
-            "PASSWORD": os.environ.get("SQL_PASSWORD", "password"),
-            "HOST": os.environ.get("SQL_HOST", "localhost"),
-            "PORT": os.environ.get("SQL_PORT", "5432"),
-            }
-        }
+    "default": {
+        "ENGINE": os.environ.get("SQL_ENGINE", "django.db.backends.sqlite3"),
+        "NAME": os.environ.get("SQL_DATABASE", BASE_DIR / "db.sqlite3"),
+        "USER": os.environ.get("SQL_USER", "user"),
+        "PASSWORD": os.environ.get("SQL_PASSWORD", "password"),
+        "HOST": os.environ.get("SQL_HOST", "localhost"),
+        "PORT": os.environ.get("SQL_PORT", "5432"),
+    }
+}
 
 LOGGING = {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "formatters": {
-            "verbose": {
-                "format": "{levelname} {asctime} {module} {process:d} {message}",
-                "style": "{",
-                           },
-                },
-            "handlers": {
-                "file": {
-                    "level": "INFO",
-                    "class": "logging.FileHandler",
-                    "filename": f"{BASE_DIR}/user_uploads/webserver.log",
-                    "formatter": "verbose",
-                    },
-                },
-            "root": {
-                "handlers": ["file"],
-                "level": "INFO",
-                },
-            }
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "file": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "filename": f"{BASE_DIR}/user_uploads/webserver.log",
+            "formatter": "verbose",
+        },
+    },
+    "root": {
+        "handlers": ["file"],
+        "level": "INFO",
+    },
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -175,9 +174,9 @@ STATIC_URL = "static/"
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-#STATICFILES_DIRS = [
+# STATICFILES_DIRS = [
 #    BASE_DIR / "static",
-#]
+# ]
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
@@ -185,21 +184,20 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 HUEY = {
     "huey_class": "huey.RedisHuey",  # Huey implementation to use.
-    'name': DATABASES['default']['NAME'],
+    "name": DATABASES["default"]["NAME"],
     "results": True,  # Store return values of tasks.
     "store_none": False,  # If a task returns None, do not save to results.
     "immediate": False,  # If DEBUG=True, run synchronously.
     "utc": True,  # Use UTC for all times internally.
-    'connection': {
-        'host': 'redis',
-        'port': 6379,
-        'db': 0,
-        'connection_pool': None,  # Definitely you should use pooling!
+    "connection": {
+        "host": "redis",
+        "port": 6379,
+        "db": 0,
+        "connection_pool": None,  # Definitely you should use pooling!
         # ... tons of other options, see redis-py for details.
-
         # huey-specific connection parameters.
-        'read_timeout': 1,  # If not polling (blocking pop), use timeout.
-        'url': None,  # Allow Redis config via a DSN.
+        "read_timeout": 1,  # If not polling (blocking pop), use timeout.
+        "url": None,  # Allow Redis config via a DSN.
     },
     "consumer": {
         "workers": 1,
