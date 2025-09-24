@@ -80,8 +80,8 @@ function deleteThisFileForm() {
     event.target.closest('.entry').remove();
 
     // contains buttons as well!!
-	const form = document.getElementById('input-form')
-    console.log(form)
+    const form = document.getElementById('input-form');
+    console.log(form);
     let allFileForms = Array.from(form.children).filter(child =>
 	child.classList.contains('entry')
     );
@@ -108,7 +108,7 @@ function handleChangedFileType() {
     //
 	// changing label text as well
     if(currentOption === "MaestroDir") {
-	newLabelText = "Upload Maestro results directory...";
+	newLabelText = "Upload directory";
 	fileInput.removeAttribute("multiple");
 	fileInput.setAttribute("webkitdirectory", "")
     } else if(currentOption === "TopTrjPair") {
@@ -171,4 +171,6 @@ function handleNewFiles() {
     }
 }
 
-
+function toggleExperimentalValues() {
+    console.log("Message")
+}

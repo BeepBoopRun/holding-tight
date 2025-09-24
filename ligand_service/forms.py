@@ -36,7 +36,7 @@ class FileInputForm(forms.Form):
     )
     file = MultipleFileField()
     paths = forms.JSONField(required=False)
-    value = forms.FloatField()
+    value = forms.FloatField(required=False)
     name = forms.CharField(max_length=256, required=False)
     template_name = "submit/form_snippet.html"
 
@@ -44,6 +44,7 @@ class FileInputForm(forms.Form):
 class InputDetails(forms.Form):
     email = forms.EmailField(required=False)
     compare_by_residue = forms.BooleanField(required=False)
+    add_VOI = forms.BooleanField(required=False)
     name_VOI = forms.CharField(required=False)
 
 

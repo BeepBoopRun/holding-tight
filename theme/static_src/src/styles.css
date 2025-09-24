@@ -8,3 +8,12 @@
   * the scope of this path.
   */
 @source "../../../**/*.{html,py,js}";
+
+@theme {
+    --color-navy-900: #0B132B;
+    --color-navy-800: #1C2541;
+    --color-navy-700: #3A506B;
+    --color-navy-500: #5BC0BE;
+    --color-navy-300: #A2D5F2;
+    --color-navy-100: #E0FBFC;
+}

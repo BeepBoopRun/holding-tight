@@ -1,11 +1,11 @@
 {% load widget_tweaks %}
 
-<div class="entry border rounded-lg my-1 inline-flex flex-wrap">
+<div class="entry border rounded-lg mb-1 inline-flex flex-nowrap min-w-0 max-w-full">
     {{ form.non_errors }}
     {% render_field form.name class="p-2 m-2 bg-gray-300 border rounded-lg" placeholder="Run name (optional)" %}
-    {% render_field form.value class="p-2 m-2 bg-gray-300 border rounded-lg max-w-38" placeholder="Enter value" %}
+    {% render_field form.value class="val hidden p-2 m-2 bg-gray-300 border rounded-lg max-w-38" placeholder="Enter value" %}
     {% render_field form.choice class="file-label-input p-2 m-2 bg-gray-300 border rounded-lg cursor-pointer" onchange="handleChangedFileType()" %}
-    <label class="file-label p-2 m-2 bg-gray-300 border rounded-lg cursor-pointer overflow-x-auto max-w-112 whitespace-nowrap flex-shrink">Upload topology and trajectory files...
+    <label class="file-label p-2 m-2 bg-gray-300 border rounded-lg cursor-pointer overflow-x-auto whitespace-nowrap flex-shrink min-w-55">Upload files...
 	{% render_field form.file class="file-input hidden" onchange="handleNewFiles()" %}
     </label>
     {% render_field form.paths class+="file-paths hidden" %}

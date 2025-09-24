@@ -228,9 +228,11 @@ def get_sequence(pdb: Path):
     return sequence
 
 
-def extract_uniprot_ident(target_description: str) -> str:
+def extract_uniprot_entry_name(target_description: str) -> str:
     return target_description.split("|")[1]
 
+def extract_uniprot_accession(target_description: str) -> str:
+    return target_description.split("|")[0]
 
 def create_translation_dict_by_blast(
     topology: Path, trajectory: Path
@@ -247,11 +249,11 @@ def create_translation_dict_by_blast(
         named_atoms = []
         for idx in seq_chains[chain]:
             # create (chain, residue_name, residue_idx) triplets
-            # for consistency with getcontacts lib
             named_atoms.append((chain, ONE_TO_THREE[seq_chains[chain][idx]], str(idx)))
             # sort by residue_idx
         named_atoms.sort(key=lambda x: int(x[2]))
-        ident = extract_uniprot_ident(alignment.hit_id)
+        ident = extract_uniprot_entry_name(alignment.hit_id)
+        accession = extract_uniprot_accession(alignment.hit_id)
         residue_info = get_residues_extended(ident)
         if residue_info is None:
             print(
@@ -259,7 +261,7 @@ def create_translation_dict_by_blast(
                 flush=True,
             )
             continue
-        alignment_scores[chain] = (ident, alignment.evalue)
+        alignment_scores[chain] = (ident, accession, alignment.evalue)
         print(f"ALIGNMENT SCORES: {alignment_scores}", flush=True)
         # creates a list of tuples, where first element is the start index and second is the end index
         # (start idx, end idx)

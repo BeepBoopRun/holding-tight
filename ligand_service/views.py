@@ -93,7 +93,7 @@ def form(request):
                 form_id=idx,
                 submission=submission,
                 file_input=file_input,
-                value=form.cleaned_data["value"],
+                value=form.cleaned_data["value"] or 0,
                 name=form.cleaned_data["name"],
             ).save()
         queue_task(submission, task_type=SubmissionTask.TaskType.INTERACTIONS)
@@ -137,11 +137,22 @@ def search(request, job_id):
         )
 
     results_path = submission.get_results_directy()
+    filenames = []
+    
+    filenames = [None] * len(submission.submittedform_set.all())
+
+    for dir in submission.get_main_directory().iterdir():
+        if dir.is_dir() and dir.name != "results":
+            filenames[int(dir.name)] = ", ".join([x.name for x in dir.iterdir()])
+
     with open(results_path / "group_data.json") as f:
         group_data = json.load(f)
 
     with open(results_path / "runs_data.json") as f:
         runs_data = json.load(f)
+
+    for run, filename in zip(runs_data, filenames):
+        run["filename"] = filename
 
     return render(
         request,

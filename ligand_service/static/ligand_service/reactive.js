@@ -1,8 +1,11 @@
 window.addEventListener('DOMContentLoaded', () => {
-    fileLabels = document.querySelectorAll(".file-label-input") 
+    fileLabels = document.querySelectorAll(".file-label-input");
     for (const fileLabel of fileLabels){
-	fileLabel.dispatchEvent(new Event('change'))
+	fileLabel.dispatchEvent(new Event('change'));
     }
+    add_VOI_button = document.getElementById("id_add_VOI");
+    add_VOI_button.dispatchEvent(new Event('change'));
+
 
     const formset_handler = document.getElementById('id_submit-TOTAL_FORMS');
     formset_handler.value = 1;
@@ -60,7 +63,7 @@ function updateFormsetIDs(containingElement, newID) {
 
 function addFiles() {
     const template = document.getElementById('file-input-template');
-    const form = document.getElementById('input-form');
+    const form = document.getElementById('file-table');
     const add_more_btn = document.getElementById('add-more-btn');
     currentPrefix = nextFileFormID.toString();
     nextFileFormID += 1
@@ -107,11 +110,11 @@ function handleChangedFileType() {
     //
 	// changing label text as well
     if(currentOption === "MaestroDir") {
-	newLabelText = "Upload Maestro results directory...";
+	newLabelText = "Upload directory...";
 	fileInput.removeAttribute("multiple");
 	fileInput.setAttribute("webkitdirectory", "")
     } else if(currentOption === "TopTrjPair") {
-	newLabelText = "Upload topology and trajectory files..."
+	newLabelText = "Upload files..."
 	fileInput.setAttribute("multiple", "");
 	fileInput.removeAttribute("webkitdirectory");
     }
@@ -135,10 +138,7 @@ function handleNewFiles() {
 
     let chosenFiles = "";
     if(fileInput.hasAttribute("multiple")) {
-	chosenFiles = 'Chosen files:'
-	for (const file of fileInput.files) {
-	    chosenFiles = chosenFiles.concat(' ', file.name);
-	}
+	chosenFiles = 'Chosen files: ' + Array.from(fileInput.files, (x) => x.name).join(', ');
     } else if(fileInput.hasAttribute("webkitdirectory")) {
 	const paths = {};
 	const dt = new DataTransfer();
@@ -170,4 +170,8 @@ function handleNewFiles() {
     }
 }
 
-
+function toggleExperimentalValues(){
+    const array = document.querySelectorAll('input.val');
+    add_VOI_button = document.getElementById("id_add_VOI");
+    array.forEach((element) => add_VOI_button.checked ? element.classList.remove("hidden") : element.classList.add("hidden"));
+}
