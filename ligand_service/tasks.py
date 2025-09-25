@@ -145,20 +145,20 @@ def extract_data_from_plip_results(
                         ligand_info["smiles"].append(ident["smiles"])
                         ligand_info["inchikey"].append(ident["inchikey"])
 
-                        mol = Chem.MolFromSmiles(ident["smiles"])
-                        logger.info(f"Molecule created from SMILES")
-                        if mol is not None:
-                            img = Draw.MolToImage(mol, size=(300, 300))
-                            logger.info(f"Image created from mol")
-                            buffer = BytesIO()
-                            img.save(buffer, format="PNG")
-                            img_str = base64.b64encode(buffer.getvalue()).decode()
-                            inlined_image = (
-                                f'<img src="data:image/png;base64,{img_str}">'
-                            )
-                            ligand_info["img"].append(inlined_image)
-                        else:
-                            ligand_info["img"].append("")
+                       # mol = Chem.MolFromSmiles(ident["smiles"])
+                       # logger.info(f"Molecule created from SMILES")
+                       # if mol is not None:
+                       #     img = Draw.MolToImage(mol, size=(300, 300))
+                       #     logger.info(f"Image created from mol")
+                       #     buffer = BytesIO()
+                       #     img.save(buffer, format="PNG")
+                       #     img_str = base64.b64encode(buffer.getvalue()).decode()
+                       #     inlined_image = (
+                       #         f'<img src="data:image/png;base64,{img_str}">'
+                       #     )
+                       #     ligand_info["img"].append(inlined_image)
+                       # else:
+                       #     ligand_info["img"].append("")
 
                     for interaction_type in interactions:
                         for contacts_lists in interactions[interaction_type] or []:
