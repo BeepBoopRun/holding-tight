@@ -31,5 +31,6 @@ RUN micromamba run python /home/$MAMBA_USER/prod/setup/getchebi.py
 COPY --chown=$MAMBA_USER:$MAMBA_USER . .
 ENV ENV_NAME=base
 ENV PYTHONUNBUFFERED=1
+ENV RUNNING_IN_DOCKER=True
 
 CMD ["micromamba", "run", "sh", "docker_entrypoint.sh"]

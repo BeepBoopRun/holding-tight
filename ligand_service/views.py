@@ -10,6 +10,8 @@ from django.shortcuts import render
 from django.conf import settings
 from django.http import FileResponse, Http404
 
+from ligand_service.contacts import get_trajectory_frame_count
+
 from .models import Submission, SubmissionTask
 from .forms import FileInputFormSet, InputDetails
 from .models import SubmittedForm
@@ -136,6 +138,34 @@ def search(request, job_id):
 
     tasks = SubmissionTask.objects.filter(submission=submission)
     if not all([task.status == SubmissionTask.TaskStatus.SUCCESS for task in tasks]):
+        results_path = submission.get_results_directy()
+        for task in tasks:
+            print(task.__dict__, flush=True)
+            if (
+                task.status != SubmissionTask.TaskStatus.PENDING
+                and task.status != SubmissionTask.TaskStatus.FAILED
+            ):
+                forms_progress_info = []
+                for form in submission.submittedform_set.all():
+                    files = form.get_trajectory_files()
+                    frame_count = get_trajectory_frame_count(
+                        files.topology, files.trajectory
+                    )
+                    file_id = str(form.form_id)
+                    processed_frames_dir = (
+                        results_path / f"interactions_data_{file_id}" / "results"
+                    )
+                    frames_processed = 0
+                    if processed_frames_dir.is_dir():
+                        frames_processed = len(
+                            [x for x in processed_frames_dir.iterdir()]
+                        )
+                    forms_progress_info.append(
+                        {f"Form {form.form_id}": f"{frames_processed}/{frame_count} frames"}
+                    )
+                task.task_progress_info = forms_progress_info
+                task.save()
+
         return render(
             request,
             "search/ongoing.html",

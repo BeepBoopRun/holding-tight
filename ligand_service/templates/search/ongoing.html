@@ -20,6 +20,11 @@ Placeholder
 
 {% for task in tasks %}
 <p>{{ task.get_task_type_display }} - {{ task.get_status_display }}</p>
+{% for info in task.get_task_progress_info %}
+{% for subtask_name, progress in info.items %}
+<p class="ml-2">{{ subtask_name }} - {{ progress }}</p>
+{% endfor %}
+{% endfor %}
 {% empty %}
 <p>No tasks found.</p>
 {% endfor %}

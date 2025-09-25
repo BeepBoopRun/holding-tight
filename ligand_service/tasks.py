@@ -38,7 +38,8 @@ def save_file(file_handle, path_to_save_location: Path):
             destination.write(chunk)
 
 
-def find_interactions(submission: Submission):
+def find_interactions(submission_task: SubmissionTask):
+    submission = submission_task.submission
     print(submission, flush=True)
     results_dir = submission.get_results_directy()
     results_dir.mkdir(exist_ok=True)
@@ -63,7 +64,8 @@ def find_interactions(submission: Submission):
     submission.save()
 
 
-def prepare_numbering_pdb(submission: Submission):
+def prepare_numbering_pdb(submission_task: SubmissionTask):
+    submission = submission_task.submission
     results_dir = submission.get_results_directy()
     results_dir.mkdir(exist_ok=True)
     for form in submission.submittedform_set.all():
@@ -148,15 +150,21 @@ def extract_data_from_plip_results(
 
                         for interaction_type in interactions:
                             for contacts_lists in interactions[interaction_type] or []:
-                                contacts = interactions[interaction_type][contacts_lists]
+                                contacts = interactions[interaction_type][
+                                    contacts_lists
+                                ]
                                 # handling of instance where there is only one interaction of given type,
                                 # xmltodict doesn't make a list in this case, it just provides the value
                                 if not isinstance(contacts, list):
                                     contacts = [contacts]
                                 for value in contacts:
                                     frames_data["frame"].append(int(dir.stem[5:]))
-                                    frames_data["interaction_type"].append(interaction_type)
-                                    frames_data["residue_chain"].append(value["reschain"])
+                                    frames_data["interaction_type"].append(
+                                        interaction_type
+                                    )
+                                    frames_data["residue_chain"].append(
+                                        value["reschain"]
+                                    )
                                     frames_data["residue_number"].append(value["resnr"])
                                     frames_data["residue_name"].append(value["restype"])
                                     frames_data["lig_residue_chain"].append(
@@ -169,7 +177,9 @@ def extract_data_from_plip_results(
                                         value["restype_lig"]
                                     )
                 except Exception as e:
-                    logger.warning(f"Failed to read file while extracting info from PLIP failed, err: {e}")
+                    logger.warning(
+                        f"Failed to read file while extracting info from PLIP failed, err: {e}"
+                    )
     except Exception as e:
         logger.warning(f"Failed to open files, err: {e}")
 
@@ -379,7 +389,8 @@ else:
         inchikey_to_chebiID = json.load(f)
 
 
-def analyse_submission(submission: Submission):
+def analyse_submission(submission_task: SubmissionTask):
+    submission = submission_task.submission
     results_path = submission.get_results_directy()
     group_data = {"status": "TO BE ADDED!"}
     runs_data = []
@@ -498,7 +509,7 @@ def queue_interactions(task: SubmissionTask):
     task.status = "R"
     task.save()
     try:
-        find_interactions(task.submission)
+        find_interactions(task)
     except Exception as e:
         logger.warning(f"Interaction tasks failed! Error: {e}")
         task.status = "F"
@@ -513,7 +524,7 @@ def queue_analysis(task: SubmissionTask):
     task.status = "R"
     task.save()
     try:
-        analyse_submission(task.submission)
+        analyse_submission(task)
     except Exception as e:
         logger.warning(f"Analysis failed! Error: {e}")
         task.status = "F"
@@ -528,7 +539,7 @@ def queue_numbering(task: SubmissionTask):
     task.status = "R"
     task.save()
     try:
-        prepare_numbering_pdb(task.submission)
+        prepare_numbering_pdb(task)
     except Exception as e:
         logger.warning(f"Numbering tasks failed! Error: {e}")
         task.status = "F"

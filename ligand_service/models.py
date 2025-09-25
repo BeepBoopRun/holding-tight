@@ -64,7 +64,10 @@ class SubmissionTask(models.Model):
         ANALYSIS = "A", "Analysing interaction results"
 
     task_type = models.CharField(max_length=1, choices=TaskType)
-    subtasks = models.CharField()
+    task_progress_info = models.JSONField(default=list, blank=True)
+
+    def get_task_progress_info(self):
+        return self.task_progress_info or {}
 
 
 class GPCRdbResidueAPI(models.Model):
