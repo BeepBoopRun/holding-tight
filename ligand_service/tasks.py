@@ -103,72 +103,75 @@ def extract_data_from_plip_results(
         "img": [],
     }
     logger.info("Extracting data from plip results...")
-    for dir in sorted(results_dir.iterdir(), key=lambda x: (len(str(x)), x)):
-        if not dir.is_dir():
-            continue
-        with open(dir / "report.xml") as f:
-            try:
-                file_contents = f.read()
-                out = xmltodict.parse(file_contents)
-                binding_sites = out["report"]["bindingsite"]
-                # handling of instance, where there is only one binding site
-                if not isinstance(binding_sites, list):
-                    binding_sites = [binding_sites]
-                for binding_site in binding_sites:
-                    if binding_site["@has_interactions"] == "False":
-                        print("Skipping binding_site:", binding_site)
-                        continue
-                    ident = binding_site["identifiers"]
-                    interactions = binding_site["interactions"]
-                    inchikey = ident["inchikey"]
-                    if inchikey in ligand_info["inchikey"]:
-                        idx = ligand_info["inchikey"].index(inchikey)
-                        ligand_info["frames_seen"][idx] += 1
-                    else:
-                        print("Adding new ligand", inchikey, flush=True)
-                        ligand_info["frames_seen"].append(1)
-                        ligand_info["name"].append(ident["longname"])
-                        ligand_info["ligtype"].append(ident["ligtype"])
-                        ligand_info["smiles"].append(ident["smiles"])
-                        ligand_info["inchikey"].append(ident["inchikey"])
-
-                        mol = Chem.MolFromSmiles(ident["smiles"])
-                        if mol is not None:
-                            img = Draw.MolToImage(mol, size=(300, 300))
-                            buffer = BytesIO()
-                            img.save(buffer, format="PNG")
-                            img_str = base64.b64encode(buffer.getvalue()).decode()
-                            inlined_image = (
-                                f'<img src="data:image/png;base64,{img_str}">'
-                            )
-                            ligand_info["img"].append(inlined_image)
+    try:
+        for dir in sorted(results_dir.iterdir(), key=lambda x: (len(str(x)), x)):
+            if not dir.is_dir():
+                continue
+            with open(dir / "report.xml") as f:
+                try:
+                    file_contents = f.read()
+                    out = xmltodict.parse(file_contents)
+                    binding_sites = out["report"]["bindingsite"]
+                    # handling of instance, where there is only one binding site
+                    if not isinstance(binding_sites, list):
+                        binding_sites = [binding_sites]
+                    for binding_site in binding_sites:
+                        if binding_site["@has_interactions"] == "False":
+                            print("Skipping binding_site:", binding_site)
+                            continue
+                        ident = binding_site["identifiers"]
+                        interactions = binding_site["interactions"]
+                        inchikey = ident["inchikey"]
+                        if inchikey in ligand_info["inchikey"]:
+                            idx = ligand_info["inchikey"].index(inchikey)
+                            ligand_info["frames_seen"][idx] += 1
                         else:
-                            ligand_info["img"].append("")
+                            print("Adding new ligand", inchikey, flush=True)
+                            ligand_info["frames_seen"].append(1)
+                            ligand_info["name"].append(ident["longname"])
+                            ligand_info["ligtype"].append(ident["ligtype"])
+                            ligand_info["smiles"].append(ident["smiles"])
+                            ligand_info["inchikey"].append(ident["inchikey"])
 
-                    for interaction_type in interactions:
-                        for contacts_lists in interactions[interaction_type] or []:
-                            contacts = interactions[interaction_type][contacts_lists]
-                            # handling of instance where there is only one interaction of given type,
-                            # xmltodict doesn't make a list in this case, it just provides the value
-                            if not isinstance(contacts, list):
-                                contacts = [contacts]
-                            for value in contacts:
-                                frames_data["frame"].append(int(dir.stem[5:]))
-                                frames_data["interaction_type"].append(interaction_type)
-                                frames_data["residue_chain"].append(value["reschain"])
-                                frames_data["residue_number"].append(value["resnr"])
-                                frames_data["residue_name"].append(value["restype"])
-                                frames_data["lig_residue_chain"].append(
-                                    value["reschain_lig"]
+                            mol = Chem.MolFromSmiles(ident["smiles"])
+                            if mol is not None:
+                                img = Draw.MolToImage(mol, size=(300, 300))
+                                buffer = BytesIO()
+                                img.save(buffer, format="PNG")
+                                img_str = base64.b64encode(buffer.getvalue()).decode()
+                                inlined_image = (
+                                    f'<img src="data:image/png;base64,{img_str}">'
                                 )
-                                frames_data["lig_residue_name"].append(
-                                    value["resnr_lig"]
-                                )
-                                frames_data["lig_residue_number"].append(
-                                    value["restype_lig"]
-                                )
-            except Exception as e:
-                logger.warning(f"Extracting info from PLIP failed, err: {e}")
+                                ligand_info["img"].append(inlined_image)
+                            else:
+                                ligand_info["img"].append("")
+
+                        for interaction_type in interactions:
+                            for contacts_lists in interactions[interaction_type] or []:
+                                contacts = interactions[interaction_type][contacts_lists]
+                                # handling of instance where there is only one interaction of given type,
+                                # xmltodict doesn't make a list in this case, it just provides the value
+                                if not isinstance(contacts, list):
+                                    contacts = [contacts]
+                                for value in contacts:
+                                    frames_data["frame"].append(int(dir.stem[5:]))
+                                    frames_data["interaction_type"].append(interaction_type)
+                                    frames_data["residue_chain"].append(value["reschain"])
+                                    frames_data["residue_number"].append(value["resnr"])
+                                    frames_data["residue_name"].append(value["restype"])
+                                    frames_data["lig_residue_chain"].append(
+                                        value["reschain_lig"]
+                                    )
+                                    frames_data["lig_residue_name"].append(
+                                        value["resnr_lig"]
+                                    )
+                                    frames_data["lig_residue_number"].append(
+                                        value["restype_lig"]
+                                    )
+                except Exception as e:
+                    logger.warning(f"Failed to read file while extracting info from PLIP failed, err: {e}")
+    except Exception as e:
+        logger.warning(f"Failed to open files, err: {e}")
 
     frame_df = pd.DataFrame(frames_data)
     ligand_df = pd.DataFrame(ligand_info)
