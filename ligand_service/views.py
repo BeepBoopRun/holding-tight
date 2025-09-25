@@ -118,8 +118,10 @@ def render_about(request):
 def empty_search(request):
     return render(request, "search/empty.html")
 
+
 def example_submission(request):
     return render(request, "example_submission.html")
+
 
 def search(request, job_id):
     try:
@@ -169,7 +171,6 @@ def search(request, job_id):
             "DEBUG": settings.DEBUG,
         },
     )
-
 
 
 def download_file(request, filepath):

@@ -138,7 +138,9 @@ def extract_data_from_plip_results(
                             buffer = BytesIO()
                             img.save(buffer, format="PNG")
                             img_str = base64.b64encode(buffer.getvalue()).decode()
-                            inlined_image = f'<img src="data:image/png;base64,{img_str}">'
+                            inlined_image = (
+                                f'<img src="data:image/png;base64,{img_str}">'
+                            )
                             ligand_info["img"].append(inlined_image)
                         else:
                             ligand_info["img"].append("")
@@ -159,7 +161,9 @@ def extract_data_from_plip_results(
                                 frames_data["lig_residue_chain"].append(
                                     value["reschain_lig"]
                                 )
-                                frames_data["lig_residue_name"].append(value["resnr_lig"])
+                                frames_data["lig_residue_name"].append(
+                                    value["resnr_lig"]
+                                )
                                 frames_data["lig_residue_number"].append(
                                     value["restype_lig"]
                                 )
