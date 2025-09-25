@@ -64,6 +64,7 @@ class SubmissionTask(models.Model):
         ANALYSIS = "A", "Analysing interaction results"
 
     task_type = models.CharField(max_length=1, choices=TaskType)
+    subtasks = models.CharField()
 
 
 class GPCRdbResidueAPI(models.Model):

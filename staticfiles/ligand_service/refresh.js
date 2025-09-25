@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", (event) => {
-    const statusInfo = document.getElementById('status-info'); 
+    const statusInfo = document.getElementById('refresh-info'); 
 
     let remainingTime = 30;
 
