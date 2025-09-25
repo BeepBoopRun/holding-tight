@@ -30,7 +30,7 @@ services:
 
   huey:
     build: .
-    command: micromamba run python manage.py run_huey
+    command: micromamba run python manage.py run_huey --logfile=./user_uploads/huey.log
     restart: "unless-stopped"
     develop:
       watch:

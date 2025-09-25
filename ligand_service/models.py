@@ -21,6 +21,10 @@ class Submission(models.Model):
         return self.get_main_directory().joinpath("results")
 
 
+class TrajectoryFiles(NamedTuple):
+    topology: Path
+    trajectory: Path
+
 class SubmittedForm(models.Model):
     submission = models.ForeignKey(Submission, on_delete=models.CASCADE)
     form_id = models.IntegerField()
@@ -36,7 +40,7 @@ class SubmittedForm(models.Model):
     def get_main_directory(self):
         return self.submission.get_main_directory().joinpath(str(self.form_id))
 
-    def get_trajectory_files(self):
+    def get_trajectory_files(self) -> TrajectoryFiles:
         if self.file_input == SubmittedForm.FILE_INPUT_TYPES.MAESTRO_DIR:
             files = get_files_maestro(self.get_main_directory())
         elif self.file_input == SubmittedForm.FILE_INPUT_TYPES.TOPTRJ_PAIR:
@@ -74,10 +78,6 @@ class GPCRdbResidueAPI(models.Model):
     uniprot_identifier = models.CharField(max_length=12)
     response_json = models.JSONField()
 
-
-class TrajectoryFiles(NamedTuple):
-    topology: Path
-    trajectory: Path
 
 
 def get_files_maestro(directory: Path) -> TrajectoryFiles | None:

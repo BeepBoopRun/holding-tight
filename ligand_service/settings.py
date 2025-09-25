@@ -125,17 +125,35 @@ LOGGING = {
         },
     },
     "handlers": {
-        "file": {
+        "webserver_file": {
             "level": "INFO",
             "class": "logging.FileHandler",
             "filename": f"{BASE_DIR}/user_uploads/webserver.log",
             "formatter": "verbose",
         },
+        "huey_file": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "filename": f"{BASE_DIR}/user_uploads/huey.log",
+            "formatter": "verbose",
+        },
     },
     "root": {
-        "handlers": ["file"],
-        "level": "INFO",
+        "handlers": ["webserver_file"],
+        "level": "DEBUG",
     },
+    'loggers': {
+        'huey': {
+            'handlers': ['huey_file'],
+            'level': 'DEBUG',
+            'propagate': False,
+            },
+        'ligand_service.tasks': {
+            'handlers': ['huey_file'],
+            'level': 'DEBUG',
+            'propagate': False,
+            },
+        },
 }
 
 # Password validation

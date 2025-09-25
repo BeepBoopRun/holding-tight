@@ -1,3 +1,4 @@
+from fileinput import filename
 from pathlib import Path
 import uuid
 import json
@@ -124,6 +125,17 @@ def empty_search(request):
 def example_submission(request):
     return render(request, "example_submission.html")
 
+def simulation_name(form: SubmittedForm):
+    if form.file_input == SubmittedForm.FILE_INPUT_TYPES.TOPTRJ_PAIR:
+        filename = ", ".join([x.name for x in form.get_trajectory_files()])
+    elif form.file_input == SubmittedForm.FILE_INPUT_TYPES.MAESTRO_DIR:
+        filename = form.get_trajectory_files().topology.parent.name
+    else:
+        logger.error("Encountered impossible file_input type in form")
+        return None
+    name = f'"{form.name}"' if form.name is not None and form.name is not "" else str(form.form_id)
+    return f"Simulation {name} ({filename})"
+    
 
 def search(request, job_id):
     try:
@@ -161,7 +173,7 @@ def search(request, job_id):
                             [x for x in processed_frames_dir.iterdir()]
                         )
                     forms_progress_info.append(
-                        {f"Form {form.form_id}": f"{frames_processed}/{frame_count} frames"}
+                        {simulation_name(form): f"{frames_processed}/{frame_count} frames"}
                     )
                 task.task_progress_info = forms_progress_info
                 task.save()
@@ -173,13 +185,10 @@ def search(request, job_id):
         )
 
     results_path = submission.get_results_directy()
+
     filenames = []
-
-    filenames = [None] * len(submission.submittedform_set.all())
-
-    for dir in submission.get_main_directory().iterdir():
-        if dir.is_dir() and dir.name != "results":
-            filenames[int(dir.name)] = ", ".join([x.name for x in dir.iterdir()])
+    for form in submission.submittedform_set.all():
+        filenames.append(simulation_name(form))
 
     with open(results_path / "group_data.json") as f:
         group_data = json.load(f)
