@@ -129,7 +129,7 @@ def extract_data_from_plip_results(
                     binding_sites = [binding_sites]
                 for binding_site in binding_sites:
                     if binding_site["@has_interactions"] == "False":
-                        logger.info("Skipping binding_site:", str(binding_site))
+                        logger.info(f"Skipping binding_site: {binding_site}")
                         continue
                     ident = binding_site["identifiers"]
                     interactions = binding_site["interactions"]
@@ -138,7 +138,7 @@ def extract_data_from_plip_results(
                         idx = ligand_info["inchikey"].index(inchikey)
                         ligand_info["frames_seen"][idx] += 1
                     else:
-                        logger.info("Adding new ligand", str(inchikey))
+                        logger.info(f"Adding new ligand: {inchikey}")
                         ligand_info["frames_seen"].append(1)
                         ligand_info["name"].append(ident["longname"])
                         ligand_info["ligtype"].append(ident["ligtype"])

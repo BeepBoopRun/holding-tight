@@ -133,7 +133,7 @@ def simulation_name(form: SubmittedForm):
     else:
         logger.error("Encountered impossible file_input type in form")
         return None
-    name = f'"{form.name}"' if form.name is not None and form.name is not "" else str(form.form_id)
+    name = f'"{form.name}"' if form.name is not None and form.name != "" else str(form.form_id)
     return f"Simulation {name} ({filename})"
     
 
