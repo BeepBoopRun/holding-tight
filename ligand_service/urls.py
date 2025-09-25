@@ -30,6 +30,7 @@ urlpatterns = [
     path("search/", views.empty_search),
     path("search/<str:job_id>", views.search),
     path("download/<path:filepath>/", views.download_file, name="download_file"),
+    path("example-submission", views.example_submission),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 if settings.DEBUG:
