@@ -114,7 +114,7 @@ def extract_data_from_plip_results(
         "ligtype": [],
         "smiles": [],
         "inchikey": [],
-        "img": [],
+        # "img": [],
     }
     logger.info("Extracting data from plip results...")
     for dir in sorted(results_dir.iterdir(), key=lambda x: (len(str(x)), x)):
