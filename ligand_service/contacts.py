@@ -6,12 +6,15 @@ from typing import Any
 import tempfile
 import datetime
 import re
+import logging
 
 import requests
 from vmd import molecule, atomsel
 from Bio import SearchIO
 
 from .models import GPCRdbResidueAPI
+
+logger = logging.getLogger(__name__)
 
 BLASTP_PATH = "blastp"
 BLASTDB_PATH = Path("blast/blast_db").absolute()
@@ -23,6 +26,7 @@ GPCRDB_NUMBERING_ENDPOINT = (
     "https://gpcrdb.org/services/structure/assign_generic_numbers"
 )
 GPCRDB_RESIDUES_EXTENDED_ENDPOINT = "https://gpcrdb.org/services/residues/extended/"
+THREADS_FOR_PLIP = os.environ.get("THREADS_FOR_PLIP", "1")
 
 THREE_TO_ONE = {
     "ALA": "A",
@@ -75,6 +79,7 @@ def get_sequence_chains(
         if chain not in structure:
             structure[chain] = {}
         structure[chain][residue_id] = THREE_TO_ONE.get(resname, "X")
+    molecule.delete(molid)
     return structure
 
 
@@ -84,6 +89,7 @@ def get_pdb(topology_file: Path, trajectory_file: Path, outfile: Path):
 
     sel = atomsel("all", molid=molid)
     sel.write("pdb", str(outfile))
+    molecule.delete(molid)
 
 
 def get_numbering(pdb_file: Path, outfile: Path):
@@ -299,6 +305,7 @@ def create_translation_dict_by_blast(
 
 
 def get_results_plip(pdbfiles: list[Path], outdir: Path | None = None):
+    logger.info(f"Starting PLIP with {THREADS_FOR_PLIP} threads")
     if outdir is not None:
         prev_wd = os.getcwd()
         os.chdir(outdir)
@@ -306,6 +313,8 @@ def get_results_plip(pdbfiles: list[Path], outdir: Path | None = None):
         [
             "plip",
             "-v",
+            "--maxthreads",
+            THREADS_FOR_PLIP,
             "-x",
             "-f",
         ]
@@ -339,6 +348,7 @@ def get_trajectory_frame_count(topology_file: Path, trajectory_file: Path):
         filename=str(trajectory_file),
         waitfor=-1,
     )
+    molecule.delete(molid)
     return molecule.numframes(molid) - num_frames
 
 

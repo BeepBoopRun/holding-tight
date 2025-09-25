@@ -3,6 +3,7 @@ from io import BytesIO
 from pathlib import Path
 import json
 import logging
+import functools
 
 from django.utils import timezone
 from huey.contrib.djhuey import db_task
@@ -25,6 +26,16 @@ from .contacts import (
 
 logger = logging.getLogger(__name__)
 
+def log_exceptions(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            logger.exception(f"Unhandled exception in {func.__name__}: {e}")
+            raise
+    return wrapper
+
 PAGE_BG_COLOR = "#e5e7eb"
 COMMON_LAYOUT = dict(margin=dict(l=0, r=0, t=0, b=0), paper_bgcolor=PAGE_BG_COLOR)
 LIGAND_DETECTION_THRESHOLD = 0.7
@@ -38,6 +49,7 @@ def save_file(file_handle, path_to_save_location: Path):
             destination.write(chunk)
 
 
+@log_exceptions
 def find_interactions(submission_task: SubmissionTask):
     submission = submission_task.submission
     print(submission, flush=True)
@@ -64,6 +76,7 @@ def find_interactions(submission_task: SubmissionTask):
     submission.save()
 
 
+@log_exceptions
 def prepare_numbering_pdb(submission_task: SubmissionTask):
     submission = submission_task.submission
     results_dir = submission.get_results_directy()
@@ -83,6 +96,7 @@ def prepare_numbering_pdb(submission_task: SubmissionTask):
     logger.info("Numbering PDB files complete")
 
 
+@log_exceptions
 def extract_data_from_plip_results(
     results_dir: Path,
 ) -> tuple[pd.DataFrame, pd.DataFrame] | None:
@@ -119,7 +133,7 @@ def extract_data_from_plip_results(
                         binding_sites = [binding_sites]
                     for binding_site in binding_sites:
                         if binding_site["@has_interactions"] == "False":
-                            print("Skipping binding_site:", binding_site)
+                            logger.info("Skipping binding_site:", str(binding_site))
                             continue
                         ident = binding_site["identifiers"]
                         interactions = binding_site["interactions"]
@@ -128,7 +142,7 @@ def extract_data_from_plip_results(
                             idx = ligand_info["inchikey"].index(inchikey)
                             ligand_info["frames_seen"][idx] += 1
                         else:
-                            print("Adding new ligand", inchikey, flush=True)
+                            logger.info("Adding new ligand", str(inchikey))
                             ligand_info["frames_seen"].append(1)
                             ligand_info["name"].append(ident["longname"])
                             ligand_info["ligtype"].append(ident["ligtype"])
@@ -177,11 +191,11 @@ def extract_data_from_plip_results(
                                         value["restype_lig"]
                                     )
                 except Exception as e:
-                    logger.warning(
+                    logger.exception(
                         f"Failed to read file while extracting info from PLIP failed, err: {e}"
                     )
     except Exception as e:
-        logger.warning(f"Failed to open files, err: {e}")
+        logger.exception(f"Failed to open files, err: {e}")
 
     frame_df = pd.DataFrame(frames_data)
     ligand_df = pd.DataFrame(ligand_info)
