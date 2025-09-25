@@ -10,8 +10,6 @@ from huey.contrib.djhuey import db_task
 import plotly.express as px
 import pandas as pd
 import plotly.graph_objects as go
-from rdkit.Chem import Draw
-from rdkit import Chem
 import xmltodict
 import numpy as np
 
@@ -98,6 +96,8 @@ def prepare_numbering_pdb(submission_task: SubmissionTask):
 def extract_data_from_plip_results(
     results_dir: Path,
 ) -> tuple[pd.DataFrame, pd.DataFrame] | None:
+    from rdkit.Chem import Draw
+    from rdkit import Chem
     frames_data = {
         "frame": [],
         "interaction_type": [],
@@ -146,8 +146,10 @@ def extract_data_from_plip_results(
                         ligand_info["inchikey"].append(ident["inchikey"])
 
                         mol = Chem.MolFromSmiles(ident["smiles"])
+                        logger.info(f"Molecule created from SMILES")
                         if mol is not None:
                             img = Draw.MolToImage(mol, size=(300, 300))
+                            logger.info(f"Image created from mol")
                             buffer = BytesIO()
                             img.save(buffer, format="PNG")
                             img_str = base64.b64encode(buffer.getvalue()).decode()
