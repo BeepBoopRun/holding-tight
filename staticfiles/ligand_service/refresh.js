@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", (event) => {
-    const statusInfo = document.getElementById('refresh-info'); 
+    const statusInfo = document.getElementById('refresh-status'); 
 
     let remainingTime = 30;
 
@@ -9,7 +9,8 @@ document.addEventListener("DOMContentLoaded", (event) => {
 	    location.reload();
 	    clearInterval(refreshIntervalId);
 	}
-	statusInfo.textContent = statusInfo.textContent.slice(0, -2) + remainingTime;
+	statusInfo.textContent = "Page will refresh in " + remainingTime + "s";
+	statusInfo.classList.remove("invisible")
     }
 
     var refreshIntervalId = setInterval(refreshSite, 1000);
