@@ -350,7 +350,7 @@ def get_trajectory_frame_count(topology_file: Path, trajectory_file: Path):
     )
     count = molecule.numframes(molid) - num_frames
     molecule.delete(molid)
-    return count//20
+    return count
 
 
 WATER_SYNONYMS = [
