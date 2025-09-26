@@ -156,6 +156,7 @@ def search(request, job_id):
             if (
                 task.status != SubmissionTask.TaskStatus.PENDING
                 and task.status != SubmissionTask.TaskStatus.FAILED
+                and task.task_type == SubmissionTask.TaskType.INTERACTIONS
             ):
                 forms_progress_info = []
                 for form in submission.submittedform_set.all():
