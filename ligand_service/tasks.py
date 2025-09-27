@@ -1,5 +1,3 @@
-import base64
-from io import BytesIO
 from pathlib import Path
 import json
 import logging
@@ -24,6 +22,7 @@ from .contacts import (
 
 logger = logging.getLogger(__name__)
 
+
 def log_exceptions(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
@@ -32,7 +31,9 @@ def log_exceptions(func):
         except Exception as e:
             logger.exception(f"Unhandled exception in {func.__name__}: {e}")
             raise
+
     return wrapper
+
 
 PAGE_BG_COLOR = "#e5e7eb"
 COMMON_LAYOUT = dict(margin=dict(l=0, r=0, t=0, b=0), paper_bgcolor=PAGE_BG_COLOR)
@@ -96,8 +97,6 @@ def prepare_numbering_pdb(submission_task: SubmissionTask):
 def extract_data_from_plip_results(
     results_dir: Path,
 ) -> tuple[pd.DataFrame, pd.DataFrame] | None:
-    from rdkit.Chem import Draw
-    from rdkit import Chem
     frames_data = {
         "frame": [],
         "interaction_type": [],
@@ -121,73 +120,65 @@ def extract_data_from_plip_results(
         if not dir.is_dir():
             continue
         with open(dir / "report.xml") as f:
-                file_contents = f.read()
-                out = xmltodict.parse(file_contents)
-                binding_sites = out["report"]["bindingsite"]
-                # handling of instance, where there is only one binding site
-                if not isinstance(binding_sites, list):
-                    binding_sites = [binding_sites]
-                for binding_site in binding_sites:
-                    if binding_site["@has_interactions"] == "False":
-                        logger.info(f"Skipping binding_site: {binding_site}")
-                        continue
-                    ident = binding_site["identifiers"]
-                    interactions = binding_site["interactions"]
-                    inchikey = ident["inchikey"]
-                    if inchikey in ligand_info["inchikey"]:
-                        idx = ligand_info["inchikey"].index(inchikey)
-                        ligand_info["frames_seen"][idx] += 1
-                    else:
-                        logger.info(f"Adding new ligand: {inchikey}")
-                        ligand_info["frames_seen"].append(1)
-                        ligand_info["name"].append(ident["longname"])
-                        ligand_info["ligtype"].append(ident["ligtype"])
-                        ligand_info["smiles"].append(ident["smiles"])
-                        ligand_info["inchikey"].append(ident["inchikey"])
+            file_contents = f.read()
+            out = xmltodict.parse(file_contents)
+            binding_sites = out["report"]["bindingsite"]
+            # handling of instance, where there is only one binding site
+            if not isinstance(binding_sites, list):
+                binding_sites = [binding_sites]
+            for binding_site in binding_sites:
+                if binding_site["@has_interactions"] == "False":
+                    logger.info(f"Skipping binding_site: {binding_site}")
+                    continue
+                ident = binding_site["identifiers"]
+                interactions = binding_site["interactions"]
+                inchikey = ident["inchikey"]
+                if inchikey in ligand_info["inchikey"]:
+                    idx = ligand_info["inchikey"].index(inchikey)
+                    ligand_info["frames_seen"][idx] += 1
+                else:
+                    logger.info(f"Adding new ligand: {inchikey}")
+                    ligand_info["frames_seen"].append(1)
+                    ligand_info["name"].append(ident["longname"])
+                    ligand_info["ligtype"].append(ident["ligtype"])
+                    ligand_info["smiles"].append(ident["smiles"])
+                    ligand_info["inchikey"].append(ident["inchikey"])
 
-                       # mol = Chem.MolFromSmiles(ident["smiles"])
-                       # logger.info(f"Molecule created from SMILES")
-                       # if mol is not None:
-                       #     img = Draw.MolToImage(mol, size=(300, 300))
-                       #     logger.info(f"Image created from mol")
-                       #     buffer = BytesIO()
-                       #     img.save(buffer, format="PNG")
-                       #     img_str = base64.b64encode(buffer.getvalue()).decode()
-                       #     inlined_image = (
-                       #         f'<img src="data:image/png;base64,{img_str}">'
-                       #     )
-                       #     ligand_info["img"].append(inlined_image)
-                       # else:
-                       #     ligand_info["img"].append("")
+                # mol = Chem.MolFromSmiles(ident["smiles"])
+                # logger.info(f"Molecule created from SMILES")
+                # if mol is not None:
+                #     img = Draw.MolToImage(mol, size=(300, 300))
+                #     logger.info(f"Image created from mol")
+                #     buffer = BytesIO()
+                #     img.save(buffer, format="PNG")
+                #     img_str = base64.b64encode(buffer.getvalue()).decode()
+                #     inlined_image = (
+                #         f'<img src="data:image/png;base64,{img_str}">'
+                #     )
+                #     ligand_info["img"].append(inlined_image)
+                # else:
+                #     ligand_info["img"].append("")
 
-                    for interaction_type in interactions:
-                        for contacts_lists in interactions[interaction_type] or []:
-                            contacts = interactions[interaction_type][
-                                contacts_lists
-                            ]
-                            # handling of instance where there is only one interaction of given type,
-                            # xmltodict doesn't make a list in this case, it just provides the value
-                            if not isinstance(contacts, list):
-                                contacts = [contacts]
-                            for value in contacts:
-                                frames_data["frame"].append(int(dir.stem[5:]))
-                                frames_data["interaction_type"].append(
-                                    interaction_type
-                                )
-                                frames_data["residue_chain"].append(
-                                    value["reschain"]
-                                )
-                                frames_data["residue_number"].append(value["resnr"])
-                                frames_data["residue_name"].append(value["restype"])
-                                frames_data["lig_residue_chain"].append(
-                                    value["reschain_lig"]
-                                )
-                                frames_data["lig_residue_name"].append(
-                                    value["resnr_lig"]
-                                )
-                                frames_data["lig_residue_number"].append(
-                                    value["restype_lig"]
-                                )
+                for interaction_type in interactions:
+                    for contacts_lists in interactions[interaction_type] or []:
+                        contacts = interactions[interaction_type][contacts_lists]
+                        # handling of instance where there is only one interaction of given type,
+                        # xmltodict doesn't make a list in this case, it just provides the value
+                        if not isinstance(contacts, list):
+                            contacts = [contacts]
+                        for value in contacts:
+                            frames_data["frame"].append(int(dir.stem[5:]))
+                            frames_data["interaction_type"].append(interaction_type)
+                            frames_data["residue_chain"].append(value["reschain"])
+                            frames_data["residue_number"].append(value["resnr"])
+                            frames_data["residue_name"].append(value["restype"])
+                            frames_data["lig_residue_chain"].append(
+                                value["reschain_lig"]
+                            )
+                            frames_data["lig_residue_name"].append(value["resnr_lig"])
+                            frames_data["lig_residue_number"].append(
+                                value["restype_lig"]
+                            )
     frame_df = pd.DataFrame(frames_data)
     ligand_df = pd.DataFrame(ligand_info)
     ligand_df.drop_duplicates(inplace=True)
@@ -440,7 +431,7 @@ def analyse_submission(submission_task: SubmissionTask):
                 if key in dic:
                     return dic[key]
 
-            df["BLAST numbering"] = df.apply(get_numbering_blast, axis=1)
+            df["GPCRdb numbering"] = df.apply(get_numbering_blast, axis=1)
             run_data["interaction_graph"] = create_interaction_area_graph(df)
             df.to_csv(
                 path_or_buf=(results_path / f"result{file_id}_aggregated.csv"),
@@ -508,6 +499,7 @@ def queue_task(submission: Submission, task_type: SubmissionTask.TaskType):
 
 
 # could be written better to make less db calls
+
 
 @log_exceptions
 @db_task()

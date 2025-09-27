@@ -3,6 +3,7 @@
 {% load static %}
 {% block extra_headers %}
 <script src="{% static 'ligand_service/reactive.js' %}"> </script>
+<script src="{% static 'resumable.js' %}"> </script>
 {% endblock %}
 
 {% block content %}
@@ -33,6 +34,7 @@
 	    </div>
 	</div>
 	<button type="submit" class="bg-green-300 hover:bg-green-400 border rounded-lg p-2 cursor-pointer ">Submit</button>
+	<button type="reset" class="bg-red-300 hover:bg-red-400 border rounded-lg p-2 cursor-pointer ">Reset</button>
 	<div id="progress-bar-container" class="invisible inline-flex items-center gap-2 rounded-lg border p-2">
 	    <label for="progress-bar">Submission progress:</label>
 	    <progress id="progress-bar" max="100" value="0" class="bg-gray-300 border align-middle"></progress>
@@ -68,4 +70,10 @@
 <button class="text-xl border rounded-lg p-2 bg-red-400 hover:bg-red-200 mt-1 hover:cursor-pointer" onclick="downloadLogs(event, 'huey_cli.log')">
     Download huey cli logs
 </button>
+<div class="border w-fit p-2 flex flex-nowrap">
+    <span id="browseButton" class="cursor-pointer bg-amber-500 p-2">Browse...</span>
+    <span id="filesInfo" class="bg-amber-300 p-2" onclick="">Selected files:</span>
+    <span id="sendButton" class="cursor-pointer bg-amber-500 p-2" onclick="uploadThis(0)">Send</span>
+    <p id="uploadStatus" class="invisible cursor-pointer bg-amber-500 p-2">0</p>
+</div>
 {% endblock %}

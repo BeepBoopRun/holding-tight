@@ -1,4 +1,31 @@
+let resumables = [];
+function uploadThis(value) {
+    resumables[value].upload();
+    console.log("Started upload!");
+}
+
 window.addEventListener('DOMContentLoaded', () => {
+
+    var r = new Resumable({
+	target:'/api/file',
+	query : {form_id: '0'},
+	minFileSizeErrorCallback:function(file, errorCount) {},
+	// testChunks: false,
+    });
+    resumables.push(r)
+
+    r.assignDrop(document.getElementById('browseButton'));
+    r.assignBrowse(document.getElementById('browseButton'), true);
+    r.on('fileAdded', function(file, event){
+	console.log(file)
+    });
+    const uploadStatusIndicator = document.getElementById("uploadStatus")
+    r.on('progress', function(){
+	uploadStatusIndicator.innerText = (r.progress() * 100).toPrecision(4) + "%"
+	uploadStatusIndicator.classList.remove("invisible")
+    });
+
+
     fileLabels = document.querySelectorAll(".file-label-input");
     for (const fileLabel of fileLabels){
 	fileLabel.dispatchEvent(new Event('change'));

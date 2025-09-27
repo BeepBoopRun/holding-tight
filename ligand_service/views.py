@@ -1,19 +1,19 @@
-from fileinput import filename
 from pathlib import Path
 import uuid
 import json
 import logging
 
 
-from django.http import HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect
 from django.http.response import HttpResponseBadRequest
 from django.shortcuts import render
 from django.conf import settings
 from django.http import FileResponse, Http404
 
 from ligand_service.contacts import get_trajectory_frame_count
+from ligand_service.utils import ResumableFilesManager
 
-from .models import Submission, SubmissionTask
+from .models import Submission, SubmissionTask, UploadedFiles
 from .forms import FileInputFormSet, InputDetails
 from .models import SubmittedForm
 from .tasks import queue_task
@@ -33,6 +33,55 @@ def handle_uploaded_file(file_handle, path_to_save_location: Path):
     with open(path_to_save_location, "wb+") as destination:
         for chunk in file_handle.chunks():
             destination.write(chunk)
+
+
+file_manager = ResumableFilesManager()
+def file_upload_resumable(request):
+    if request.method == "POST":
+        chunk_written, directory_complete = file_manager.handle_resumable_post_request(
+            request.POST,
+            request.FILES.get("file", None),
+            settings.BASE_DIR
+            / "user_uploads"
+            / request.session.session_key
+            / "uploads",
+        )
+        if directory_complete is not None:
+            UploadedFiles.objects.create(
+                path=directory_complete.name, user_key=request.session.session_key
+            ).save()
+
+    elif request.method == "GET":
+        result = file_manager.handle_resumable_get_request(
+            request.GET,
+            settings.BASE_DIR
+            / "user_uploads"
+            / request.session.session_key
+            / "uploads",
+        )
+        if result:
+            return HttpResponse(status=200)
+        else:
+            return HttpResponse(status=204)
+    return HttpResponse(status=200)
+
+
+def dashboard(request):
+    ready_dirs = file_manager.list_completed_directories()
+    print(ready_dirs, flush=True)
+    users_uploads_path = Path(
+        settings.BASE_DIR / "user_uploads" / request.session.session_key / "uploads"
+    )
+
+    return render(
+        request,
+        "submit/dashboard.html",
+        {
+            "user_dirs": UploadedFiles.objects.filter(
+                user_key=request.session.session_key
+            )
+        },
+    )
 
 
 def form(request):
@@ -125,6 +174,7 @@ def empty_search(request):
 def example_submission(request):
     return render(request, "example_submission.html")
 
+
 def simulation_name(form: SubmittedForm):
     if form.file_input == SubmittedForm.FILE_INPUT_TYPES.TOPTRJ_PAIR:
         filename = ", ".join([x.name for x in form.get_trajectory_files()])
@@ -133,9 +183,13 @@ def simulation_name(form: SubmittedForm):
     else:
         logger.error("Encountered impossible file_input type in form")
         return None
-    name = f'"{form.name}"' if form.name is not None and form.name != "" else str(form.form_id)
+    name = (
+        f'"{form.name}"'
+        if form.name is not None and form.name != ""
+        else str(form.form_id)
+    )
     return f"Simulation {name} ({filename})"
-    
+
 
 def search(request, job_id):
     try:
@@ -174,7 +228,11 @@ def search(request, job_id):
                             [x for x in processed_frames_dir.iterdir()]
                         )
                     forms_progress_info.append(
-                        {simulation_name(form): f"{frames_processed}/{frame_count} frames"}
+                        {
+                            simulation_name(
+                                form
+                            ): f"{frames_processed}/{frame_count} frames"
+                        }
                     )
                 task.task_progress_info = forms_progress_info
                 task.save()

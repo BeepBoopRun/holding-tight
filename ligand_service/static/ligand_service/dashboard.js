@@ -3,12 +3,10 @@ function uploadThis(value) {
     resumables[value].upload();
     console.log("Started upload!");
 }
-
 window.addEventListener('DOMContentLoaded', () => {
 
     var r = new Resumable({
 	target:'/api/file',
-	query : {form_id: '0'},
 	minFileSizeErrorCallback:function(file, errorCount) {},
 	// testChunks: false,
     });
@@ -18,13 +16,24 @@ window.addEventListener('DOMContentLoaded', () => {
     r.assignBrowse(document.getElementById('browseButton'), true);
     r.on('fileAdded', function(file, event){
 	console.log(file)
+
     });
+    const browseButton = document.getElementById("browseButton")
+    const filesInfoElement = document.getElementById("filesInfo")
+    const confirmButton = document.getElementById("confirmButton")
+    const inputTypeSelect = document.getElementById("inputTypeSelect")
     const uploadStatusIndicator = document.getElementById("uploadStatus")
     r.on('progress', function(){
 	uploadStatusIndicator.innerText = (r.progress() * 100).toPrecision(4) + "%"
 	uploadStatusIndicator.classList.remove("invisible")
     });
-
+    confirmButton.addEventListener("click", (event) => { 
+	const fileCount = resumables[0].files.length
+	console.log(fileCount)
+	resumables[0].opts.query = {'fileCount': fileCount}
+	console.log(resumables[0])
+	resumables[0].upload()	
+    })
 
     fileLabels = document.querySelectorAll(".file-label-input");
     for (const fileLabel of fileLabels){
@@ -37,36 +46,6 @@ window.addEventListener('DOMContentLoaded', () => {
     const formset_handler = document.getElementById('id_submit-TOTAL_FORMS');
     formset_handler.value = 1;
 
-
-    const form = document.getElementById("input-form");
-    const progressBar = document.getElementById("progress-bar");
-    const progressBarContainer = document.getElementById("progress-bar-container"); 
-    const progressBarCounter = document.getElementById("progress-bar-counter"); 
-
-
-    form.addEventListener("submit", function (e) {
-	e.preventDefault();
-	progressBarContainer.classList.remove("invisible");
-
-	const xhr = new XMLHttpRequest();
-	const formData = new FormData(form);
-
-	xhr.upload.addEventListener("progress", function (event) {
-	    if (event.lengthComputable) {
-		const percent = Math.round((event.loaded / event.total) * 100);
-		progressBar.value = percent;
-		progressBarCounter.textContent = percent + '%';
-	    }
-	});
-
-	xhr.addEventListener("load", function () {
-	    console.log("Sending complete!");
-	    window.location.href = xhr.responseURL;
-	});
-
-	xhr.open("POST", "/submit/form");
-	xhr.send(formData);
-    });
 });
 
 let nextFileFormID = 1

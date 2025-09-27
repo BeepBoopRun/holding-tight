@@ -115,46 +115,32 @@ DATABASES = {
     }
 }
 
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "verbose": {
-            "format": "{levelname} {asctime} {module} {process:d} {message}",
-            "style": "{",
-        },
-    },
-    "handlers": {
-        "webserver_file": {
-            "level": "INFO",
-            "class": "logging.FileHandler",
-            "filename": f"{BASE_DIR}/user_uploads/webserver.log",
-            "formatter": "verbose",
-        },
-        "huey_file": {
-            "level": "INFO",
-            "class": "logging.FileHandler",
-            "filename": f"{BASE_DIR}/user_uploads/huey.log",
-            "formatter": "verbose",
-        },
-    },
-    "root": {
-        "handlers": ["webserver_file"],
-        "level": "DEBUG",
-    },
-    'loggers': {
-        'huey': {
-            'handlers': ['huey_file'],
-            'level': 'DEBUG',
-            'propagate': False,
-            },
-        'ligand_service.tasks': {
-            'handlers': ['huey_file'],
-            'level': 'DEBUG',
-            'propagate': False,
+LOGGING = (
+    {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "verbose": {
+                "format": "{levelname} {asctime} {module} {process:d} {message}",
+                "style": "{",
             },
         },
-}
+        "handlers": {
+            "webserver_file": {
+                "level": "INFO",
+                "class": "logging.FileHandler",
+                "filename": "/var/log/django/webserver.log",
+                "formatter": "verbose",
+            },
+        },
+        "root": {
+            "handlers": ["webserver_file"],
+            "level": "DEBUG",
+        },
+    }
+    if os.environ.get("RUNNING_IN_DOCKER", False)
+    else {}
+)
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -194,13 +180,20 @@ STATIC_URL = "static/"
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# STATICFILES_DIRS = [
-#    BASE_DIR / "static",
-# ]
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": "redis:6379/1",
+    }
+}
 
 HUEY = {
     "huey_class": "huey.RedisHuey",  # Huey implementation to use.

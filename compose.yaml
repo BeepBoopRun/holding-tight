@@ -13,6 +13,7 @@ services:
     volumes:
       - user_uploads:/home/mambauser/prod/user_uploads:z
       - static_volume:/home/mambauser/prod/staticfiles:z
+      - logs:/var/log/django:z
     environment:
       - NPM_BIN_PATH=/home/mambauser/.nvm/versions/node/v22.19.0/bin/npm
     depends_on:
@@ -23,6 +24,7 @@ services:
     restart: "unless-stopped"
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+      - logs:/var/log/postgres:z
     environment:
       - POSTGRES_USER=ligand_user
       - POSTGRES_PASSWORD=ligand_passwd
@@ -30,7 +32,7 @@ services:
 
   huey:
     build: .
-    command: micromamba run python manage.py run_huey --logfile=./user_uploads/huey_cli.log
+    command: micromamba run python manage.py run_huey
     restart: "unless-stopped"
     develop:
       watch:
@@ -39,6 +41,7 @@ services:
           target: /home/mambauser/prod/ligand_service/tasks.py
     user: "57439:57439"
     volumes:
+      - logs:/var/log/huey:z
       - user_uploads:/home/mambauser/prod/user_uploads:z
     depends_on:
       - redis
@@ -56,6 +59,7 @@ services:
     volumes:
       - user_uploads:/user_uploads:z
       - static_volume:/static:z
+      - logs:/var/log/nginx:z
     depends_on:
       - web
     restart: "unless-stopped"
@@ -69,3 +73,4 @@ volumes:
   postgres_data:
   user_uploads:
   static_volume:
+  logs:

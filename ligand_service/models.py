@@ -21,9 +21,17 @@ class Submission(models.Model):
         return self.get_main_directory().joinpath("results")
 
 
+class UploadedFiles(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    path = models.CharField(max_length=128)
+    user_key = models.CharField(max_length=32)
+    verified = models.BooleanField(default=False)
+
+
 class TrajectoryFiles(NamedTuple):
     topology: Path
     trajectory: Path
+
 
 class SubmittedForm(models.Model):
     submission = models.ForeignKey(Submission, on_delete=models.CASCADE)
@@ -77,7 +85,6 @@ class SubmissionTask(models.Model):
 class GPCRdbResidueAPI(models.Model):
     uniprot_identifier = models.CharField(max_length=12)
     response_json = models.JSONField()
-
 
 
 def get_files_maestro(directory: Path) -> TrajectoryFiles | None:
