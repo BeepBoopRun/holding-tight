@@ -385,7 +385,6 @@ else:
         inchikey_to_chebiID = json.load(f)
 
 
-@log_exceptions
 def analyse_submission(submission_task: SubmissionTask):
     submission = submission_task.submission
     results_path = submission.get_results_directy()

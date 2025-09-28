@@ -22,9 +22,12 @@ from django.conf.urls.static import static
 from . import views
 
 urlpatterns = [
-    path("api/file", views.file_upload_resumable),
-    path("submit/", views.submit),
+    path("dashboard/api/sim/upload", views.upload_sim),
+    path("dashboard/api/sim/delete", views.delete_sim),
+    path("dashboard/api/sim/start", views.start_sim),
+    path("dashboard/api/sims-data", views.send_sims_data),
     path("dashboard/", views.dashboard),
+    path("submit/", views.submit),
     path("submit/form", views.form),
     path("admin/", admin.site.urls),
     path("", views.redirect_to_submit),

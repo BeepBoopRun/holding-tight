@@ -1,10 +1,6 @@
 {% extends 'base.html' %}
 {% load widget_tweaks %}
 {% load static %}
-{% block extra_headers %}
-<script src="{% static 'ligand_service/dashboard.js' %}"> </script>
-<script src="{% static 'resumable.js' %}"> </script>
-{% endblock %}
 
 {% block content %}
 <details open class="my-4 text-l rounded-lg border p-2 bg-gray-300 cursor-pointer">
@@ -16,28 +12,32 @@
     </p>
 </details>
 
-<div class="border rounded-lg p-2 min-w-0">
-    <div class="mb-4 text-xl border-b -m-2 rounded-t-lg p-2 bg-gray-300 flex flex-nowrap items-center">
+<div class="border rounded-lg p-2 ">
+    <div class="mb-4 text-xl border-b -m-2 rounded-t-lg p-2 bg-gray-300 flex flex-nowrap items-center overflow-x-scroll">
+	<div title="refresh data">
+	    <svg id="refreshSpinner" class="animate-[spin_2s_ease-in-out_1_forwards] cursor-pointer size-7 mx-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+		<path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+	    </svg>
+	</div>
 	<p class="text-2xl ml-2">Upload your simulations:</p>
 	<select name="SimulationType" id="inputTypeSelect" class="ml-auto bg-gray-400/60 border rounded-lg p-2 m-2 cursor-pointer">
-	    <option value="topTrj">Topology/Trajectory files</option>
 	    <option value="maestroDir">Maestro directory</option>
+	    <option value="topTrj">Topology/Trajectory files</option>
 	</select>
 	<div class="border flex flex-nowrap justify-end rounded-lg">
 	    <span id="browseButton" class="rounded-l-lg cursor-pointer bg-slate-500/60 border-r p-2">Browse...</span>
-	    <span id="filesInfo" class="bg-gray-400/60 p-2 w-80">Select directory...</span>
+	    <span id="filesInfo" class="bg-gray-400/60 p-2 min-w-80 overflow-x-scroll max-w-150 text-nowrap">Select directory...</span>
 	    <span id="confirmButton" class="cursor-pointer bg-slate-500/60 p-2 rounded-r-lg border-l">Confirm</span>
 	</div>
-	<p id="uploadStatus" class="invisible cursor-pointer bg-amber-500 p-2">0</p>
+	<div id="progressInfo" class="hidden p-2 flex flex-nowrap bg-slate-500/60 rounded-lg border items-center m-2">
+	    <p id="progressNumerical" class="px-2">0.000</p>
+	    <svg id="cancelUpload" class="size-7 cursor-pointer hover:bg-red-300 rounded-lg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+		<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+	    </svg>
+	</div>
     </div>
-    {% for dir in user_dirs %}
-    {{ dir }}
-    {% empty %}
-    <div id="noSimulationsBanner" class="text-lg m-2">
-	No simulations uploaded.
-    </div>
-    {% endfor %}
-    <div id="simulationUploadTemplate" class="hidden">
+    <div id="simsContainer">
+	{% include "submit/sims_data.html" with user_dirs=user_dirs %}
     </div>
 </div>
 <p class="mt-2 text-xl">Please cite as...(TBD)</p>
@@ -48,7 +48,9 @@
 <button class="text-xl border rounded-lg p-2 bg-red-400 hover:bg-red-200 mt-1 hover:cursor-pointer" onclick="downloadLogs(event, 'huey.log')">
     Download huey logs
 </button>
-<button class="text-xl border rounded-lg p-2 bg-red-400 hover:bg-red-200 mt-1 hover:cursor-pointer" onclick="downloadLogs(event, 'huey_cli.log')">
-    Download huey cli logs
-</button>
+{% endblock %}
+
+{% block js_scripts %}
+<script src="{% static 'resumable.js' %}"> </script>
+<script src="{% static 'ligand_service/dashboard.js' %}"> </script>
 {% endblock %}

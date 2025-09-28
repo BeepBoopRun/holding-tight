@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import shutil
 from typing import BinaryIO
+import hashlib
 
 from django.http.request import QueryDict
 
@@ -21,17 +22,15 @@ class ResumableFile:
         """Adds chunk if doesn't exist yet.
         When all chunks are collected, writes out the whole file.
         """
-        self.chunks_added += 1
-        chunk_file_path = (
-            self.temp_files_path
-            / f"{self.relative_path.replace('/', '_')}_{self.filename}_chunk_{chunk_number}"
-        )
+        path_hash = hashlib.md5(self.relative_path.encode("utf-8")).hexdigest()
+        chunk_file_path = self.temp_files_path / f"{path_hash}_chunk_{chunk_number}"
         self.temp_files_path.mkdir(parents=True, exist_ok=True)
         with open(chunk_file_path, "wb") as f:
             f.write(file_handle.read())
         self.chunks[chunk_number - 1] = chunk_file_path
 
         chunk_written = True
+        self.chunks_added += 1
         file_writen = False
         if self.total_chunks == self.chunks_added:
             print("writing out file", flush=True)

@@ -9,6 +9,7 @@ from django.http.response import HttpResponseBadRequest
 from django.shortcuts import render
 from django.conf import settings
 from django.http import FileResponse, Http404
+from django.template.loader import render_to_string
 
 from ligand_service.contacts import get_trajectory_frame_count
 from ligand_service.utils import ResumableFilesManager
@@ -36,7 +37,11 @@ def handle_uploaded_file(file_handle, path_to_save_location: Path):
 
 
 file_manager = ResumableFilesManager()
-def file_upload_resumable(request):
+
+
+def upload_sim(request):
+    #    if not request.session.session_key:
+    #        request.session.create()
     if request.method == "POST":
         chunk_written, directory_complete = file_manager.handle_resumable_post_request(
             request.POST,
@@ -47,9 +52,15 @@ def file_upload_resumable(request):
             / "uploads",
         )
         if directory_complete is not None:
-            UploadedFiles.objects.create(
-                path=directory_complete.name, user_key=request.session.session_key
-            ).save()
+            try:
+                print(f"Directory complete!")
+                UploadedFiles.objects.create(
+                    dirname=directory_complete.name,
+                    user_key=request.session.session_key,
+                    status=UploadedFiles.TaskStatus.UNSUBMITTED,
+                ).save()
+            except Exception as e:
+                print(f"Db error: {e}")
 
     elif request.method == "GET":
         result = file_manager.handle_resumable_get_request(
@@ -66,13 +77,40 @@ def file_upload_resumable(request):
     return HttpResponse(status=200)
 
 
-def dashboard(request):
-    ready_dirs = file_manager.list_completed_directories()
-    print(ready_dirs, flush=True)
-    users_uploads_path = Path(
-        settings.BASE_DIR / "user_uploads" / request.session.session_key / "uploads"
+def delete_sim(request):
+    sim_name = json.loads(request.body)["sim_name"]
+    sim = UploadedFiles.objects.filter(
+        user_key=request.session.session_key, dirname=sim_name
+    )
+    sim.delete()
+    return HttpResponse()
+
+
+def start_sim(request):
+    sim_name = json.loads(request.body)["sim_name"]
+    sim = UploadedFiles.objects.filter(
+        user_key=request.session.session_key, dirname=sim_name
     )
 
+    return HttpResponse()
+
+
+def send_sims_data(request):
+    sims_data = render_to_string(
+        "submit/sims_data.html",
+        {
+            "user_dirs": UploadedFiles.objects.filter(
+                user_key=request.session.session_key
+            )
+        },
+    )
+    headers = {
+        "Content-Type": "text/html; charset=utf-8",
+    }
+    return HttpResponse(sims_data, headers=headers)
+
+
+def dashboard(request):
     return render(
         request,
         "submit/dashboard.html",

@@ -23,9 +23,27 @@ class Submission(models.Model):
 
 class UploadedFiles(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
-    path = models.CharField(max_length=128)
+    dirname = models.CharField(max_length=128)
     user_key = models.CharField(max_length=32)
-    verified = models.BooleanField(default=False)
+
+    class TaskStatus(models.TextChoices):
+        UNSUBMITTED = "U", "Not started"
+        QUEUED = "Q", "Queued"
+        RUNNING = "R", "Running"
+        FAILED = "F", "Failed"
+        SUCCESS = "S", "Success"
+
+    status = models.CharField(max_length=1, choices=TaskStatus)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["dirname", "user_key"], name="enforce_unique_directories"
+            )
+        ]
+
+    def __str__(self):
+        return self.dirname
 
 
 class TrajectoryFiles(NamedTuple):
