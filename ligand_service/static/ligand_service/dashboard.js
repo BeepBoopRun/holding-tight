@@ -1,66 +1,43 @@
 const refreshSpinner = document.getElementById('refreshSpinner');
 const simsContainer = document.getElementById('simsContainer')
+const selectedDirInfo = document.getElementById('filesInfo');
+const confirmButton = document.getElementById("confirmButton");
+const uploadStatusIndicator = document.getElementById("progressNumerical");
+const inputTypeSelect = document.getElementById("inputTypeSelect");
+const cancelButton = document.getElementById("cancelButton");
+const browseButton = document.getElementById('browseButton');
+const clearButton = document.getElementById('clearButton');
+
 
 async function updateSimsData() {
-	const response = await fetch("api/sims-data", {});
-	const newHTML = await response.text();
 	animate_class = Array.from(refreshSpinner.classList).filter((c) => c.startsWith('animate'))[0];
 	refreshSpinner.classList.remove(animate_class);
 	void refreshSpinner.offsetWidth;
-	simsContainer.innerHTML = newHTML;
 	await new Promise(r => setTimeout(r, 20));
 	refreshSpinner.classList.add(animate_class);
-}
-
-
-var r = new Resumable({
-	target: 'api/sim/upload',
-	minFileSizeErrorCallback: function(file, errorCount) { },
-	// testChunks: false,
-});
-
-r.assignDrop(document.getElementById('browseButton'));
-r.assignBrowse(document.getElementById('browseButton'), true);
-
-const selectedDirInfo = document.getElementById('filesInfo');
-r.on('fileAdded', function(file, event) {
-	selectedDirInfo.innerText = `Directory: ${file.relativePath.split('/')[0]}`;
-});
-
-r.on('complete', function(file, event) {
-	setTimeout(() => {
-		updateSimsData();
-	}, 10);
-});
-
-const confirmButton = document.getElementById("confirmButton");
-const uploadStatusIndicator = document.getElementById("progressNumerical");
-const progressInfoElem = document.getElementById("progressInfo");
-
-r.on('progress', function(event) {
-	uploadStatusIndicator.innerText = (r.progress() * 100).toPrecision(4) + "%";
-});
-
-confirmButton.addEventListener("click", (event) => {
-	const fileCount = r.files.length;
-	if (fileCount <= 0) {
+	await new Promise(r => setTimeout(r, 50));
+	let response = await fetch("api/sims-data", {});
+	let newHTML = await response.text();
+	if (simsContainer.innerHTML !== newHTML) {
+		simsContainer.innerHTML = newHTML;
+		prepareSimContainers();
 		return
 	}
-	progressInfoElem.classList.remove("hidden");
-	r.opts.query = { 'fileCount': fileCount };
-	console.log('Starting upload!');
-	r.upload();
-});
+	await new Promise(r => setTimeout(r, 50));
+	response = await fetch("api/sims-data", {});
+	newHTML = await response.text();
+	if (simsContainer.innerHTML !== newHTML) {
+		simsContainer.innerHTML = newHTML;
+		prepareSimContainers();
+	}
+}
 
-
-const cancelButton = document.getElementById("")
-
-function deleteSim(sim_name) {
+async function deleteSim(sim_name) {
 	const response = fetch("api/sim/delete", {
 		method: "POST",
 		body: JSON.stringify({ sim_name: sim_name }),
 	});
-	updateSimsData();
+	await updateSimsData();
 }
 
 function getSimName(any_inner_element) {
@@ -82,9 +59,93 @@ function prepareSimContainers() {
 	})
 }
 
-prepareSimContainers();
 
 refreshSpinner.addEventListener("click", async (event) => {
-	updateSimsData();
-	prepareSimContainers();
+	await updateSimsData();
 });
+
+
+var r = new Resumable({
+	target: 'api/sim/upload',
+	minFileSizeErrorCallback: function(file, errorCount) { },
+	// testChunks: false,
+	maxFilesErrorCallback: function(files, errorCount) {
+		alert('Choose two files: topology and trajectory');
+	},
+});
+
+function displayCurrentFiles() {
+	if (selectedInput === "topTrj") {
+		selectedDirInfo.innerText = "Files: " + r.files.reduce((acc, val) => acc + " " + val.fileName, "");
+	} else {
+		selectedDirInfo.innerText = `Directory: ${r.files[0].relativePath.split('/')[0]}`;
+	}
+
+}
+
+r.on('fileAdded', function(file, event) {
+	console.log("Single file", file)
+	displayCurrentFiles();
+});
+
+function resetResumableFileUploaderState() {
+	selectedInput = inputTypeSelect.value;
+	if (selectedInput === "topTrj") {
+		selectedDirInfo.innerText = "Select files...";
+		r.assignBrowse(browseButton, false);
+		r.opts.maxFiles = 2
+	} else {
+		selectedDirInfo.innerText = "Select directory...";
+		r.assignBrowse(browseButton, true);
+		r.opts.maxFiles = undefined
+	}
+	r.files = []
+}
+
+r.on('complete', function(file, event) {
+	uploadStatusIndicator.classList.add("hidden");
+	confirmButton.classList.add("rounded-r-lg");
+	selectedDirInfo.innerText = "Select directory...";
+	resetResumableFileUploaderState();
+	updateSimsData();
+});
+
+clearButton.addEventListener("click", () => {
+	resetResumableFileUploaderState();
+	r.cancel();
+});
+
+/*
+r.on('filesAdded', function(arrayAdded, arraySkipped) {
+	r.files = arrayAdded
+	displayCurrentFiles();
+});
+*/
+
+inputTypeSelect.addEventListener('change', (event) => {
+	resetResumableFileUploaderState();
+});
+
+
+
+
+confirmButton.addEventListener("click", (event) => {
+	const fileCount = r.files.length;
+	if (fileCount <= 0) {
+		return;
+	}
+	uploadStatusIndicator.classList.remove("hidden");
+	confirmButton.classList.remove("rounded-r-lg");
+	r.opts.query = { 'fileCount': fileCount };
+	console.log('Starting upload!');
+	r.upload();
+});
+
+r.on('progress', function(event) {
+	uploadStatusIndicator.innerText = (r.progress() * 100).toPrecision(4) + "%";
+});
+
+
+
+prepareSimContainers();
+resetResumableFileUploaderState();

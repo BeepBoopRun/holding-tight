@@ -22,6 +22,8 @@ class ResumableFile:
         """Adds chunk if doesn't exist yet.
         When all chunks are collected, writes out the whole file.
         """
+        if self.has_chunk(chunk_number=chunk_number):
+            return True, False
         path_hash = hashlib.md5(self.relative_path.encode("utf-8")).hexdigest()
         chunk_file_path = self.temp_files_path / f"{path_hash}_chunk_{chunk_number}"
         self.temp_files_path.mkdir(parents=True, exist_ok=True)
@@ -77,12 +79,16 @@ class ResumableFilesManager:
         # TODO!!
         pass
 
+    def get_writing_directory(
+        self, resumable_data: QueryDict, main_write_directory: Path
+    ):
+        base_dir = Path(resumable_data.get("resumableRelativePath") or "").parts[0]
+        return main_write_directory / base_dir
+
     def check_if_directory_finished(self, write_directory: Path):
-        return all(
-            [
-                file.total_chunks == file.chunks_added
-                for file in self.managed_directories[write_directory]
-            ]
+        return (
+            self.directory_file_count[write_directory][0]
+            == self.directory_file_count[write_directory][1]
         )
 
     def handle_resumable_post_request(
@@ -93,8 +99,10 @@ class ResumableFilesManager:
     ) -> tuple[bool, Path | None]:
         file_id = resumable_data.get("resumableIdentifier", None)
         base_dir = Path(resumable_data.get("resumableRelativePath") or "").parts[0]
-        write_directory = main_write_directory / base_dir
         temp_dir = main_write_directory / "temp" / base_dir
+        write_directory = self.get_writing_directory(
+            resumable_data, main_write_directory
+        )
         if file_id is None:
             return False, None
         if write_directory not in self.managed_directories:
@@ -116,32 +124,37 @@ class ResumableFilesManager:
             )
             self.managed_directories[write_directory].append(handler)
             self.managed_files[file_id] = handler
+        print(handler.chunks_added, flush=True)
         chunk_number = resumable_data.get("resumableChunkNumber") or 0
         chunk_written, file_written = handler.add_chunk(
             chunk_number=int(chunk_number), file_handle=file_handle
         )
         directory_complete = False
         if file_written:
+            print(f"File written: {resumable_data.get('resumableFilename')}")
             self.directory_file_count[write_directory][0] += 1
-            if (
-                self.directory_file_count[write_directory][0]
-                == self.directory_file_count[write_directory][1]
-            ):
-                directory_complete = True
+            directory_complete = self.check_if_directory_finished(write_directory)
         return chunk_written, write_directory if directory_complete else None
 
     def handle_resumable_get_request(
-        self, resumable_data: QueryDict, write_directory: Path
-    ) -> bool:
+        self, resumable_data: QueryDict, main_write_directory: Path
+    ) -> tuple[bool, Path | None]:
+        write_directory = self.get_writing_directory(
+            resumable_data, main_write_directory
+        )
         file_id = resumable_data.get("resumableIdentifier", None)
         if file_id is None:
-            return False
+            return False, None
         if write_directory not in self.managed_directories:
-            return False
+            return False, None
         handler = self.managed_files.get(file_id, None)
         if handler is None:
-            return False
-        return handler.has_chunk(int(resumable_data.get("resumableChunkNumber") or 0))
+            return False, None
+        has_chunk = handler.has_chunk(
+            int(resumable_data.get("resumableChunkNumber") or 0)
+        )
+        dir_ready = self.check_if_directory_finished(write_directory)
+        return has_chunk, write_directory if dir_ready else None
 
     def list_completed_directories(self):
         return [

@@ -43,7 +43,7 @@ def upload_sim(request):
     #    if not request.session.session_key:
     #        request.session.create()
     if request.method == "POST":
-        chunk_written, directory_complete = file_manager.handle_resumable_post_request(
+        chunk_written, dir_complete = file_manager.handle_resumable_post_request(
             request.POST,
             request.FILES.get("file", None),
             settings.BASE_DIR
@@ -51,11 +51,10 @@ def upload_sim(request):
             / request.session.session_key
             / "uploads",
         )
-        if directory_complete is not None:
+        if dir_complete is not None:
             try:
-                print(f"Directory complete!")
                 UploadedFiles.objects.create(
-                    dirname=directory_complete.name,
+                    dirname=dir_complete.name,
                     user_key=request.session.session_key,
                     status=UploadedFiles.TaskStatus.UNSUBMITTED,
                 ).save()
@@ -63,14 +62,28 @@ def upload_sim(request):
                 print(f"Db error: {e}")
 
     elif request.method == "GET":
-        result = file_manager.handle_resumable_get_request(
+        has_chunk, dir_complete = file_manager.handle_resumable_get_request(
             request.GET,
             settings.BASE_DIR
             / "user_uploads"
             / request.session.session_key
             / "uploads",
         )
-        if result:
+        if dir_complete:
+            try:
+                potential_existing = UploadedFiles.objects.filter(
+                    dirname=dir_complete.name,
+                    user_key=request.session.session_key,
+                )
+                if not potential_existing:
+                    UploadedFiles.objects.create(
+                        dirname=dir_complete.name,
+                        user_key=request.session.session_key,
+                        status=UploadedFiles.TaskStatus.UNSUBMITTED,
+                    ).save()
+            except Exception as e:
+                print(f"Db error: {e}")
+        if has_chunk:
             return HttpResponse(status=200)
         else:
             return HttpResponse(status=204)

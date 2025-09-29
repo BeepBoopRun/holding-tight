@@ -3,8 +3,8 @@
 {% load static %}
 
 {% block content %}
-<details open class="my-4 text-l rounded-lg border p-2 bg-gray-300 cursor-pointer">
-    <summary class="text-2xl">How to use CORAL-MD?</summary>
+<details open class="my-4 text-l rounded-lg border p-2 bg-gray-300">
+    <summary class="text-2xl  cursor-pointer">How to use CORAL-MD?</summary>
 	This tool processes molecular dynamics (MD) trajectories to examine how ligands interact with their protein targets. It identifies and characterizes interaction types such as hydrogen bonds, hydrophobic contacts, and aromatic stacking, and presents the results through time-resolved visualizations. Users can also choose to provide experimental data, allowing direct comparison between simulation outcomes and measured values. An example of the tool in action can be seen using <a href="/example-submission" class="text-blue-700 underline-offset-2 underline">this link</a>.
 	<br>
 	<br>
@@ -14,30 +14,35 @@
 
 <div class="border rounded-lg p-2 ">
     <div class="mb-4 text-xl border-b -m-2 rounded-t-lg p-2 bg-gray-300 flex flex-nowrap items-center overflow-x-scroll">
-	<div title="refresh data">
+	<div title="Refresh data">
 	    <svg id="refreshSpinner" class="animate-[spin_2s_ease-in-out_1_forwards] cursor-pointer size-7 mx-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
 		<path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
 	    </svg>
 	</div>
 	<p class="text-2xl ml-2">Upload your simulations:</p>
-	<select name="SimulationType" id="inputTypeSelect" class="ml-auto bg-gray-400/60 border rounded-lg p-2 m-2 cursor-pointer">
+	<select name="SimulationType" id="inputTypeSelect" class="h-12 ml-auto bg-gray-400/60 border rounded-lg p-2 m-2 cursor-pointer">
 	    <option value="maestroDir">Maestro directory</option>
 	    <option value="topTrj">Topology/Trajectory files</option>
 	</select>
-	<div class="border flex flex-nowrap justify-end rounded-lg">
-	    <span id="browseButton" class="rounded-l-lg cursor-pointer bg-slate-500/60 border-r p-2">Browse...</span>
-	    <span id="filesInfo" class="bg-gray-400/60 p-2 min-w-80 overflow-x-scroll max-w-150 text-nowrap">Select directory...</span>
-	    <span id="confirmButton" class="cursor-pointer bg-slate-500/60 p-2 rounded-r-lg border-l">Confirm</span>
+	<div class="border flex flex-nowrap justify-end rounded-lg items-center w-fit h-12">
+	    <span id="browseButton" class="rounded-l-lg cursor-pointer bg-slate-500/60 hover:bg-slate-500/40 border-r p-2 h-full">Browse...</span>
+	    <span id="filesInfo" class="bg-gray-400/60 p-2 min-w-80 max-w-150 text-nowrap h-full overflow-x-scroll">Select directory...</span>
+	    <div id="clearButton" title="Clear upload" class="cursor-pointer bg-slate-500/60 hover:bg-slate-500/40 border-l h-full p-2">
+		<svg class="h-full w-full" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+		    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+		</svg>
+	    </div>
+	    <div id="confirmButton" title="Confirm upload" class="cursor-pointer bg-slate-500/60 hover:bg-slate-500/40 rounded-r-lg border-l h-full p-2">
+		<svg class="h-full w-full" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+		    <path stroke-linecap="round" stroke-linejoin="round" d="M9 8.25H7.5a2.25 2.25 0 0 0-2.25 2.25v9a2.25 2.25 0 0 0 2.25 2.25h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25H15m0-3-3-3m0 0-3 3m3-3V15" />
+		</svg>
+	    </div>
+	    <p id="progressNumerical" class="hidden cursor-pointer bg-slate-500/60 hover:bg-slate-500/40 rounded-r-lg border-l h-full p-2">0.00</p>
+	    </div>
 	</div>
-	<div id="progressInfo" class="hidden p-2 flex flex-nowrap bg-slate-500/60 rounded-lg border items-center m-2">
-	    <p id="progressNumerical" class="px-2">0.000</p>
-	    <svg id="cancelUpload" class="size-7 cursor-pointer hover:bg-red-300 rounded-lg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-		<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-	    </svg>
-	</div>
-    </div>
     <div id="simsContainer">
 	{% include "submit/sims_data.html" with user_dirs=user_dirs %}
+    </div>
     </div>
 </div>
 <p class="mt-2 text-xl">Please cite as...(TBD)</p>
