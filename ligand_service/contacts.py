@@ -338,7 +338,7 @@ def get_results_plip(pdbfiles: list[Path], outdir: Path | None = None):
     return process.returncode == 0
 
 
-def get_trajectory_frame_count(topology_file: Path, trajectory_file: Path):
+def get_trajectory_frame_count(topology_file: Path, trajectory_file: Path) -> int:
     molid = molecule.load(filetype(topology_file), str(topology_file))
     num_frames = molecule.numframes(molid)
     print("Number of frames before loading trajectory", num_frames)
@@ -434,13 +434,14 @@ def get_frames_from_trajectory(
 
 
 def get_interactions_from_trajectory(
-    topology_file: Path, trajectory_file: Path, workdir: Path, frames: list[int]
+    topology_file: Path,
+    trajectory_file: Path,
+    plip_dir: Path,
+    frames_dir: Path,
+    frames: list[int],
 ):
-    frames_dir = workdir / "frames"
     frames_dir.mkdir(parents=True)
-    plip_dir = workdir / "results"
     plip_dir.mkdir(parents=True)
-    print("Starting...")
     tick = datetime.datetime.now()
     pdbs = get_frames_from_trajectory(
         topology_file, trajectory_file, frames_dir, frames

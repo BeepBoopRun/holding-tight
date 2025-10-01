@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("ligand_service", "0007_remove_uploadedfiles_verified_and_more"),
     ]

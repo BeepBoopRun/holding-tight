@@ -5,6 +5,9 @@ import uuid
 from pathlib import Path
 from typing import NamedTuple
 
+from huey.contrib.djhuey import HUEY as huey
+from .utils import get_user_uploads_dir
+
 
 class Submission(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -21,19 +24,16 @@ class Submission(models.Model):
         return self.get_main_directory().joinpath("results")
 
 
+class TrajectoryFiles(NamedTuple):
+    topology: Path
+    trajectory: Path
+
+
 class UploadedFiles(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     dirname = models.CharField(max_length=128)
     user_key = models.CharField(max_length=32)
-
-    class TaskStatus(models.TextChoices):
-        UNSUBMITTED = "U", "Not started"
-        QUEUED = "Q", "Queued"
-        RUNNING = "R", "Running"
-        FAILED = "F", "Failed"
-        SUCCESS = "S", "Success"
-
-    status = models.CharField(max_length=1, choices=TaskStatus)
+    analysis_task_id = models.UUIDField(null=True, default=None)
 
     class Meta:
         constraints = [
@@ -45,10 +45,62 @@ class UploadedFiles(models.Model):
     def __str__(self):
         return self.dirname
 
+    def is_not_queued(self) -> bool:
+        return self.analysis_task_id is None
 
-class TrajectoryFiles(NamedTuple):
-    topology: Path
-    trajectory: Path
+    def is_running(self) -> bool:
+        if self.analysis_task_id is None:
+            return False
+        try:
+            if huey.result(str(self.analysis_task_id), preserve=True) is None:
+                return True
+        except Exception:
+            return False
+        return False
+
+    def is_finished(self) -> bool:
+        if self.analysis_task_id is None:
+            return False
+        try:
+            if huey.result(str(self.analysis_task_id), preserve=True) is not None:
+                return True
+        except Exception:
+            return False
+        return False
+
+    def has_failed(self) -> bool:
+        if self.analysis_task_id is None:
+            return False
+        try:
+            if huey.result(str(self.analysis_task_id), preserve=True) is not None:
+                return False
+        except Exception as e:
+            return e
+        return False
+
+    def get_analysis_status(self) -> str:
+        if self.is_not_queued():
+            return "Not queued"
+        elif self.is_running():
+            # TODO: Add runinfo
+            return "Running"
+        elif self.has_failed():
+            return "Failure"
+        elif self.is_finished():
+            return "Finished"
+        else:
+            return "Unknown"
+
+    def get_sim_dir(self):
+        return get_user_uploads_dir(self.user_key) / self.dirname
+
+    def get_trajectory_files(self) -> TrajectoryFiles | None:
+        dir = self.get_sim_dir()
+        maestro_files = get_files_maestro(dir)
+        print("MAESTRO DIR: ", maestro_files)
+        if maestro_files is not None:
+            return maestro_files
+        return get_files_dir(dir)
 
 
 class SubmittedForm(models.Model):
@@ -105,36 +157,23 @@ class GPCRdbResidueAPI(models.Model):
     response_json = models.JSONField()
 
 
-def get_files_maestro(directory: Path) -> TrajectoryFiles | None:
-    top_candidates: list[Path] = []
-    trj_candidates: list[Path] = []
-
-    for file in directory.rglob("*"):
-        if file.suffix == ".cms":
-            top_candidates.append(file)
-        elif file.suffix == ".dtr":
-            trj_candidates.append(file)
-
-    if not top_candidates or not trj_candidates:
-        print("Needed files not found in given directory!")
-        return None
-
-    chosen_top = None
+def get_files_maestro(dir: Path) -> TrajectoryFiles | None:
+    subdirs = [x for x in dir.rglob("*") if x.is_dir()]
     chosen_trj = None
-
-    for candidate in top_candidates:
-        if candidate.name.endswith("out.cms"):
-            chosen_top = candidate
+    chosen_top = None
+    for subdir in subdirs:
+        print(subdir, flush=True)
+        if subdir.name.endswith("_trj"):
+            trj_stump = subdir / "clickme.dtr"
+            open(trj_stump, "w").close()
+            chosen_trj = trj_stump
+            print("chosen trj!", flush=True)
             break
-    if chosen_top is None:
-        chosen_top = sorted(top_candidates)[0]
-
-    for candidate in trj_candidates:
-        if candidate.name == "clickme.dtr":
-            chosen_trj = candidate
+    for file in dir.rglob("*"):
+        if file.is_file() and file.name.endswith("-out.cms"):
+            chosen_top = file
+            print("chosen top!", flush=True)
             break
-    if chosen_trj is None:
-        chosen_trj = sorted(trj_candidates)[0]
 
     if chosen_top is None or chosen_trj is None:
         return None

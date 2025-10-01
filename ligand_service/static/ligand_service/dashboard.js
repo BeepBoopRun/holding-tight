@@ -40,6 +40,15 @@ async function deleteSim(sim_name) {
 	await updateSimsData();
 }
 
+
+async function startSim(sim_name) {
+	const response = fetch("api/sim/start", {
+		method: "POST",
+		body: JSON.stringify({ sim_name: sim_name }),
+	});
+	await updateSimsData();
+}
+
 function getSimName(any_inner_element) {
 	const simData = any_inner_element.closest('.sim-data');
 	return simData.getElementsByClassName('sim-name')[0].innerText;
@@ -57,6 +66,16 @@ function prepareSimContainers() {
 			deleteSim(simName);
 		});
 	})
+
+	Array.from(simContainers).forEach((x) => {
+		const startSimBtn = x.getElementsByClassName('run-sim-btn')[0];
+		console.log(startSimBtn);
+		const simName = getSimName(startSimBtn);
+		startSimBtn.addEventListener("click", () => {
+			console.log('got event, requesting start...');
+			startSim(simName);
+		});
+	})
 }
 
 
@@ -72,19 +91,31 @@ var r = new Resumable({
 	maxFilesErrorCallback: function(files, errorCount) {
 		alert('Choose two files: topology and trajectory');
 	},
+	testChunks: false,
 });
+
+
+function getFileMainDirectory(file) {
+	return file.relativePath.split('/')[0]
+}
 
 function displayCurrentFiles() {
 	if (selectedInput === "topTrj") {
 		selectedDirInfo.innerText = "Files: " + r.files.reduce((acc, val) => acc + " " + val.fileName, "");
 	} else {
-		selectedDirInfo.innerText = `Directory: ${r.files[0].relativePath.split('/')[0]}`;
+		selectedDirInfo.innerText = `Directory: ${getFileMainDirectory(r.files[0])}`;
 	}
 
 }
 
 r.on('fileAdded', function(file, event) {
-	console.log("Single file", file)
+	// ensure that only one directory at most is present in the upload 
+	if (selectedInput === "maestroDir") {
+		console.log('Directory input, making sure oly one dir exists!')
+		const fileMainDir = getFileMainDirectory(file)
+		r.files = r.files.filter((file) => getFileMainDirectory(file) === fileMainDir)
+	}
+
 	displayCurrentFiles();
 });
 
@@ -134,9 +165,23 @@ confirmButton.addEventListener("click", (event) => {
 	if (fileCount <= 0) {
 		return;
 	}
+	if (selectedInput === "topTrj") {
+		if (fileCount < 2) {
+			alert('Choose two files: topology and trajectory');
+		}
+	}
+
 	uploadStatusIndicator.classList.remove("hidden");
 	confirmButton.classList.remove("rounded-r-lg");
+
 	r.opts.query = { 'fileCount': fileCount };
+	// naming the directory
+	if (selectedInput === "topTrj") {
+		fileNames = [r.files[0].fileName, r.files[1].fileName].sort()
+		dirName = fileNames[0] + "-" + fileNames[1]
+		r.files.forEach((file) => { file.relativePath = `${dirName}/${file.fileName}` })
+	}
+
 	console.log('Starting upload!');
 	r.upload();
 });

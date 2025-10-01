@@ -5,11 +5,25 @@ from typing import BinaryIO
 import hashlib
 
 from django.http.request import QueryDict
+from django.conf import settings
+
+
+def get_user_uploads_dir(session_key):
+    return settings.BASE_DIR / "user_uploads" / session_key / "uploads"
+
+
+def get_user_results_dir(session_key):
+    return settings.BASE_DIR / "user_uploads" / session_key / "results"
+
+
+def get_user_work_dir(session_key):
+    return settings.BASE_DIR / "user_uploads" / session_key / "work"
 
 
 @dataclass
 class ResumableFile:
     relative_path: str
+    file_id: str
     filename: str
     total_chunks: int
     chunks_added: int
@@ -91,6 +105,12 @@ class ResumableFilesManager:
             == self.directory_file_count[write_directory][1]
         )
 
+    def pop_managed_directory(self, write_directory):
+        files = self.managed_directories[write_directory]
+        for file in files:
+            self.managed_files.pop(file.file_id, None)
+        self.managed_directories.pop(write_directory, None)
+
     def handle_resumable_post_request(
         self,
         resumable_data: QueryDict,
@@ -121,19 +141,23 @@ class ResumableFilesManager:
                 ),
                 write_directory=write_directory,
                 temp_files_path=temp_dir,
+                file_id = file_id
             )
             self.managed_directories[write_directory].append(handler)
             self.managed_files[file_id] = handler
-        print(handler.chunks_added, flush=True)
         chunk_number = resumable_data.get("resumableChunkNumber") or 0
         chunk_written, file_written = handler.add_chunk(
             chunk_number=int(chunk_number), file_handle=file_handle
         )
+        print("Chunks added: ", handler.chunks_added, flush=True)
         directory_complete = False
         if file_written:
             print(f"File written: {resumable_data.get('resumableFilename')}")
             self.directory_file_count[write_directory][0] += 1
             directory_complete = self.check_if_directory_finished(write_directory)
+            if directory_complete:
+                print("Popping managed directory!")
+                self.pop_managed_directory(write_directory)
         return chunk_written, write_directory if directory_complete else None
 
     def handle_resumable_get_request(

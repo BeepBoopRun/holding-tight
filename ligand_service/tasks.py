@@ -4,7 +4,7 @@ import logging
 import functools
 
 from django.utils import timezone
-from huey.contrib.djhuey import db_task
+from huey.contrib.djhuey import db_task, task
 import plotly.express as px
 import pandas as pd
 import plotly.graph_objects as go
@@ -495,6 +495,20 @@ def queue_task(submission: Submission, task_type: SubmissionTask.TaskType):
     else:
         # unreachable
         assert False
+
+
+@task()
+def start_simulation(
+    top_file: Path, traj_file: Path, work_dir: Path, results_dir: Path
+):
+    # setup for using only specific frames
+    print("Starting the simulation!", flush=True)
+    frame_count = get_trajectory_frame_count(top_file, traj_file)
+    frames = [x for x in range(frame_count // 10)]
+    plip_dir = work_dir / "plip"
+    frames_dir = work_dir / "frames"
+    get_interactions_from_trajectory(top_file, traj_file, plip_dir, frames_dir, frames)
+    return len(frames)
 
 
 # could be written better to make less db calls

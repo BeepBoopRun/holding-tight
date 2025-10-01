@@ -2,6 +2,7 @@ from pathlib import Path
 import uuid
 import json
 import logging
+import shutil
 
 
 from django.http import HttpResponse, HttpResponseRedirect
@@ -12,12 +13,17 @@ from django.http import FileResponse, Http404
 from django.template.loader import render_to_string
 
 from ligand_service.contacts import get_trajectory_frame_count
-from ligand_service.utils import ResumableFilesManager
+from ligand_service.utils import (
+    ResumableFilesManager,
+    get_user_uploads_dir,
+    get_user_work_dir,
+    get_user_results_dir,
+)
 
 from .models import Submission, SubmissionTask, UploadedFiles
 from .forms import FileInputFormSet, InputDetails
 from .models import SubmittedForm
-from .tasks import queue_task
+from . import tasks
 
 logger = logging.getLogger(__name__)
 
@@ -40,34 +46,27 @@ file_manager = ResumableFilesManager()
 
 
 def upload_sim(request):
-    #    if not request.session.session_key:
-    #        request.session.create()
+    if not request.session.session_key:
+        request.session.create()
     if request.method == "POST":
         chunk_written, dir_complete = file_manager.handle_resumable_post_request(
             request.POST,
             request.FILES.get("file", None),
-            settings.BASE_DIR
-            / "user_uploads"
-            / request.session.session_key
-            / "uploads",
+            get_user_uploads_dir(request.session.session_key),
         )
         if dir_complete is not None:
+            print("Adding new simulation file!", flush=True)
             try:
                 UploadedFiles.objects.create(
                     dirname=dir_complete.name,
                     user_key=request.session.session_key,
-                    status=UploadedFiles.TaskStatus.UNSUBMITTED,
                 ).save()
             except Exception as e:
                 print(f"Db error: {e}")
 
     elif request.method == "GET":
         has_chunk, dir_complete = file_manager.handle_resumable_get_request(
-            request.GET,
-            settings.BASE_DIR
-            / "user_uploads"
-            / request.session.session_key
-            / "uploads",
+            request.GET, get_user_uploads_dir(request.session.session_key)
         )
         if dir_complete:
             try:
@@ -79,7 +78,6 @@ def upload_sim(request):
                     UploadedFiles.objects.create(
                         dirname=dir_complete.name,
                         user_key=request.session.session_key,
-                        status=UploadedFiles.TaskStatus.UNSUBMITTED,
                     ).save()
             except Exception as e:
                 print(f"Db error: {e}")
@@ -92,23 +90,48 @@ def upload_sim(request):
 
 def delete_sim(request):
     sim_name = json.loads(request.body)["sim_name"]
-    sim = UploadedFiles.objects.filter(
+    sim = UploadedFiles.objects.get(
         user_key=request.session.session_key, dirname=sim_name
     )
     sim.delete()
+    session_key = request.session.session_key
+    shutil.rmtree(get_user_uploads_dir(session_key) / sim.dirname, ignore_errors=True)
+    shutil.rmtree(get_user_results_dir(session_key) / sim.dirname, ignore_errors=True)
+    shutil.rmtree(get_user_work_dir(session_key) / sim.dirname, ignore_errors=True)
     return HttpResponse()
 
 
 def start_sim(request):
     sim_name = json.loads(request.body)["sim_name"]
-    sim = UploadedFiles.objects.filter(
-        user_key=request.session.session_key, dirname=sim_name
-    )
-
+    session_key = request.session.session_key
+    sim = UploadedFiles.objects.get(user_key=session_key, dirname=sim_name)
+    if sim.is_not_queued():
+        files = sim.get_trajectory_files()
+        print("Starting simulation!", flush=True)
+        if files is None:
+            return HttpResponse()
+        print("Files are not None!", flush=True)
+        sim.analysis_task_id = tasks.start_simulation(
+            files.topology,
+            files.trajectory,
+            get_user_results_dir(session_key) / sim.dirname,
+            get_user_work_dir(session_key) / sim.dirname,
+        ).id
+        sim.save()
     return HttpResponse()
 
 
 def send_sims_data(request):
+    sims = UploadedFiles.objects.filter(user_key=request.session.session_key)
+
+    for sim in sims:
+        print("SIM STATUS")
+        print("NOT QUEUED: ", sim.is_not_queued())
+        print("RUNNING: ", sim.is_running())
+        print("FINISHED: ", sim.is_finished())
+        print("FAILED: ", sim.has_failed())
+        print("---", flush=True)
+
     sims_data = render_to_string(
         "submit/sims_data.html",
         {
