@@ -11,6 +11,7 @@ import plotly.graph_objects as go
 import xmltodict
 import numpy as np
 
+
 from .models import Submission, SubmissionTask
 from .contacts import (
     get_numbering,
@@ -385,6 +386,70 @@ else:
         inchikey_to_chebiID = json.load(f)
 
 
+def analyse_simulation(
+    top_file: Path, traj_file: Path, plip_dir: Path, results_dir: Path
+):
+    run_data = {}
+    out = extract_data_from_plip_results(plip_dir)
+    if out is None:
+        return
+    df = out[0]
+    ligand_df = out[1]
+    dic, scores = create_translation_dict_by_blast(top_file, traj_file)
+    run_data["alignment_scores"] = scores
+
+    def get_numbering_blast(row):
+        assert dic is not None
+        key = (
+            row["residue_chain"],
+            row["residue_name"],
+            str(row["residue_number"]),
+        )
+        if key in dic:
+            return dic[key]
+
+    df["GPCRdb numbering"] = df.apply(get_numbering_blast, axis=1)
+    run_data["interaction_graph"] = create_interaction_area_graph(df)
+    results_dir.mkdir(exist_ok=True, parents=True)
+    df.to_csv(
+        path_or_buf=(results_dir / "interactions.csv"),
+        index=False,
+    )
+
+    ligands_arr = []
+    for ligand in ligand_df.to_dict(orient="records"):
+        simulation_frame_count = get_trajectory_frame_count(top_file, traj_file)
+        if ligand["frames_seen"] / simulation_frame_count < LIGAND_DETECTION_THRESHOLD:
+            print(
+                f"Skipping ligand below threshold, seen in {ligand['frames_seen']} out of {simulation_frame_count}",
+                flush=True,
+            )
+            continue
+        id = inchikey_to_chebiID.get(ligand["inchikey"], None)
+        name = inchikey_to_name.get(ligand["inchikey"], None)
+        ligands_arr = run_data.get("ligands", [])
+        ligands_arr.append(
+            {
+                "id": id,
+                "name": name,
+                "img": ligand.get("img", ""),
+                "frames_seen": ligand["frames_seen"],
+            }
+        )
+
+    run_data["ligands"] = ligands_arr
+
+    run_data["table"] = create_getcontacts_table(df)
+    run_data["map"] = create_time_resolved_map(df)
+
+    with open(results_dir / "run_data.json", "w") as f:
+        json.dump(run_data, f)
+
+    print("Analysis finished! Results available at: ", results_dir, flush=True)
+
+    return run_data
+
+
 def analyse_submission(submission_task: SubmissionTask):
     submission = submission_task.submission
     results_path = submission.get_results_directy()
@@ -504,10 +569,11 @@ def start_simulation(
     # setup for using only specific frames
     print("Starting the simulation!", flush=True)
     frame_count = get_trajectory_frame_count(top_file, traj_file)
-    frames = [x for x in range(frame_count // 10)]
+    frames = [x for x in range(frame_count)]
     plip_dir = work_dir / "plip"
     frames_dir = work_dir / "frames"
     get_interactions_from_trajectory(top_file, traj_file, plip_dir, frames_dir, frames)
+    analyse_simulation(top_file, traj_file, plip_dir, results_dir)
     return len(frames)
 
 

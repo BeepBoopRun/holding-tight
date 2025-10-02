@@ -6,7 +6,10 @@ from pathlib import Path
 from typing import NamedTuple
 
 from huey.contrib.djhuey import HUEY as huey
-from .utils import get_user_uploads_dir
+
+from .utils import get_user_uploads_dir, get_user_work_dir
+
+from vmd import molecule
 
 
 class Submission(models.Model):
@@ -29,11 +32,35 @@ class TrajectoryFiles(NamedTuple):
     trajectory: Path
 
 
+def filetype(file: Path) -> str:
+    filetype = file.suffix[1:]
+    if filetype == "cms":
+        filetype = "mae"
+        return filetype
+    return filetype
+
+
+def get_trajectory_frame_count(topology_file: Path, trajectory_file: Path) -> int:
+    molid = molecule.load(filetype(topology_file), str(topology_file))
+    num_frames = molecule.numframes(molid)
+    print("Number of frames before loading trajectory", num_frames)
+    molecule.read(
+        molid=molid,
+        filetype=filetype(trajectory_file),
+        filename=str(trajectory_file),
+        waitfor=-1,
+    )
+    count = molecule.numframes(molid) - num_frames
+    molecule.delete(molid)
+    return count
+
+
 class UploadedFiles(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     dirname = models.CharField(max_length=128)
     user_key = models.CharField(max_length=32)
     analysis_task_id = models.UUIDField(null=True, default=None)
+    results_id = models.UUIDField(null=True, default=uuid.uuid4)
 
     class Meta:
         constraints = [
@@ -83,7 +110,15 @@ class UploadedFiles(models.Model):
             return "Not queued"
         elif self.is_running():
             # TODO: Add runinfo
-            return "Running"
+            files = self.get_trajectory_files()
+            frame_count = get_trajectory_frame_count(files.topology, files.trajectory)
+            plip_dir = get_user_work_dir(self.user_key) / self.dirname / "plip"
+            if not plip_dir.is_dir():
+                return "Queued"
+            frames_done = len([x for x in plip_dir.iterdir()])
+            if frames_done == 0:
+                return "Queued"
+            return f"Running {frames_done} / {frame_count} frames"
         elif self.has_failed():
             return "Failure"
         elif self.is_finished():

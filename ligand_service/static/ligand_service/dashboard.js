@@ -50,31 +50,42 @@ async function startSim(sim_name) {
 }
 
 function getSimName(any_inner_element) {
+	console.log(any_inner_element)
 	const simData = any_inner_element.closest('.sim-data');
 	return simData.getElementsByClassName('sim-name')[0].innerText;
 }
+
 
 function prepareSimContainers() {
 	const simContainers = document.getElementsByClassName("sim-data");
 
 	Array.from(simContainers).forEach((x) => {
 		const deleteBtn = x.getElementsByClassName('delete-sim-btn')[0];
-		console.log(deleteBtn);
 		const simName = getSimName(deleteBtn);
-		deleteBtn.addEventListener("click", () => {
-			console.log('got event, requesting delete...');
-			deleteSim(simName);
-		});
-	})
+		if (deleteBtn != null) {
+			deleteBtn.addEventListener("click", () => {
+				console.log('got event, requesting delete...');
+				deleteSim(simName);
+			});
+		}
 
-	Array.from(simContainers).forEach((x) => {
 		const startSimBtn = x.getElementsByClassName('run-sim-btn')[0];
-		console.log(startSimBtn);
-		const simName = getSimName(startSimBtn);
-		startSimBtn.addEventListener("click", () => {
-			console.log('got event, requesting start...');
-			startSim(simName);
-		});
+		if (startSimBtn != null) {
+			startSimBtn.addEventListener("click", () => {
+				console.log('got event, requesting start...');
+				startSim(simName);
+			});
+
+		}
+
+		const showResultsBtn = x.getElementsByClassName('show-results-btn')[0];
+		if (showResultsBtn != null) {
+			showResultsBtn.addEventListener("click", () => {
+				console.log('got event, showing results...');
+				location.href = `/show/${showResultsBtn.dataset.simId}`
+			});
+		}
+
 	})
 }
 
@@ -194,3 +205,4 @@ r.on('progress', function(event) {
 
 prepareSimContainers();
 resetResumableFileUploaderState();
+setInterval(updateSimsData, 10000)

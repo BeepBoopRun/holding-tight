@@ -96,8 +96,8 @@ def delete_sim(request):
     sim.delete()
     session_key = request.session.session_key
     shutil.rmtree(get_user_uploads_dir(session_key) / sim.dirname, ignore_errors=True)
-    shutil.rmtree(get_user_results_dir(session_key) / sim.dirname, ignore_errors=True)
     shutil.rmtree(get_user_work_dir(session_key) / sim.dirname, ignore_errors=True)
+    shutil.rmtree(get_user_results_dir(str(sim.results_id)), ignore_errors=True)
     return HttpResponse()
 
 
@@ -114,8 +114,8 @@ def start_sim(request):
         sim.analysis_task_id = tasks.start_simulation(
             files.topology,
             files.trajectory,
-            get_user_results_dir(session_key) / sim.dirname,
             get_user_work_dir(session_key) / sim.dirname,
+            get_user_results_dir(sim.results_id),
         ).id
         sim.save()
     return HttpResponse()
@@ -234,7 +234,7 @@ def form(request):
 
 
 def redirect_to_submit(request):
-    return HttpResponseRedirect("/submit")
+    return HttpResponseRedirect("/dashboard")
 
 
 def render_about(request):
@@ -341,6 +341,25 @@ def search(request, job_id):
             "group_data": group_data,
             "name_VOI": submission.name_VOI,
             "DEBUG": settings.DEBUG,
+        },
+    )
+
+
+def show(request, sim_id):
+    print("GOT SIM_ID:", sim_id)
+    for sim in UploadedFiles.objects.all():
+        print(sim.results_id)
+    print("--", flush=True)
+    sim_results_dir = get_user_results_dir(sim_id)
+    if not sim_results_dir.is_dir():
+        return HttpResponseRedirect("/dashboard/")
+    with open(get_user_results_dir(sim_id) / "run_data.json") as f:
+        run_data = json.load(f)
+    return render(
+        request,
+        "search/results.html",
+        {
+            "run": run_data,
         },
     )
 

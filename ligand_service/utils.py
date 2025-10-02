@@ -12,8 +12,8 @@ def get_user_uploads_dir(session_key):
     return settings.BASE_DIR / "user_uploads" / session_key / "uploads"
 
 
-def get_user_results_dir(session_key):
-    return settings.BASE_DIR / "user_uploads" / session_key / "results"
+def get_user_results_dir(results_id):
+    return settings.BASE_DIR / "user_uploads" / str(results_id)
 
 
 def get_user_work_dir(session_key):
@@ -141,7 +141,7 @@ class ResumableFilesManager:
                 ),
                 write_directory=write_directory,
                 temp_files_path=temp_dir,
-                file_id = file_id
+                file_id=file_id,
             )
             self.managed_directories[write_directory].append(handler)
             self.managed_files[file_id] = handler
