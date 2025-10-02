@@ -6,8 +6,8 @@ RUN mkdir -p /home/$MAMBA_USER/prod/user_uploads
 RUN mkdir -p /var/log/django/
 RUN mkdir -p /var/log/huey/
 RUN chown -R 57439:57439 /home/$MAMBA_USER
-RUN chown -R 57439:57439 /var/log/django
-RUN chown -R 57439:57439 /var/log/huey
+RUN mkdir -p /var/log/django /var/log/huey \
+    && chown -R 57439:57439 /var/log/django /var/log/huey
 
 USER $MAMBA_USER
 RUN id
