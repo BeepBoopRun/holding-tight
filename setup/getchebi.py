@@ -8,7 +8,7 @@ from rdkit.Chem import inchi
 
 ftp = FTP("ftp.ebi.ac.uk")
 ftp.login()
-ftp.cwd("pub/databases/chebi/Flat_file_tab_delimited")
+ftp.cwd("pub/databases/chebi/flat_files")
 chebi_dir = Path("./chebi").absolute()
 chebi_dir.mkdir(exist_ok=True)
 print("Downloading files from ChEBI...")
