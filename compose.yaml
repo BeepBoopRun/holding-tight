@@ -23,7 +23,6 @@ services:
     restart: "unless-stopped"
     volumes:
       - postgres_data:/var/lib/postgresql/data/
-      - logs:/var/log/postgres:z
     environment:
       - POSTGRES_USER=ligand_user
       - POSTGRES_PASSWORD=ligand_passwd
