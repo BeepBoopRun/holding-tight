@@ -129,7 +129,7 @@ LOGGING = (
             "webserver_file": {
                 "level": "INFO",
                 "class": "logging.FileHandler",
-                "filename": "/var/log/django/webserver.log",
+                "filename": "./user_uploads/django.log",
                 "formatter": "verbose",
             },
         },
