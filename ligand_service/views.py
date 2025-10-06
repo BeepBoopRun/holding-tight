@@ -126,8 +126,8 @@ def send_sims_data(request):
 
 def send_analyses_history(request):
     sims_data = render_to_string(
-        "submit/sims_data.html",
-        {"user_dirs": Simulation.objects.filter(user_key=request.session.session_key)},
+        "submit/history.html",
+        {"history": GroupAnalysis.objects.filter(user_key=request.session.session_key)},
     )
     headers = {
         "Content-Type": "text/html; charset=utf-8",
@@ -135,7 +135,7 @@ def send_analyses_history(request):
     return HttpResponse(sims_data, headers=headers)
 
 
-def group_analysis(request):
+def run_group_analysis(request):
     sims_group = json.loads(request.body)["sims"]
     print(sims_group, flush=True)
     used_sims = []
@@ -154,6 +154,15 @@ def group_analysis(request):
     analysis.sims.set(used_sims)
     print("Created analysis:", analysis)
 
+    return HttpResponse()
+
+
+def delete_group_analysis(request):
+    results_id = json.loads(request.body)["resultsId"]
+    print("DELETING:", results_id, flush=True)
+    GroupAnalysis.objects.get(
+        user_key=request.session.session_key, results_id=results_id
+    ).delete()
     return HttpResponse()
 
 

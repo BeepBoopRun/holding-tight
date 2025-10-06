@@ -8,6 +8,8 @@ const cancelButton = document.getElementById("cancelButton");
 const browseButton = document.getElementById('browseButton');
 const clearButton = document.getElementById('clearButton');
 const queueAnalysisBtn = document.getElementById("queueAnalysisBtn");
+const clearQueueAnalysisBtn = document.getElementById("clearQueueAnalysisBtn");
+const historyContainer = document.getElementById("analysisHistoryContainer");
 
 const analysisGroup = new Array();
 
@@ -34,6 +36,7 @@ async function updateSimsData() {
 	}
 }
 
+
 async function deleteSim(sim_name) {
 	const response = fetch("api/sim/delete", {
 		method: "POST",
@@ -58,6 +61,8 @@ function getSimName(any_inner_element) {
 }
 
 
+clearQueueAnalysisBtn.addEventListener("click", () => { analysisGroup.length = 0; updateAnalysisGroupDisplay() });
+
 function updateAnalysisGroupDisplay() {
 	const analysisGroupContainer = document.getElementById("analysisGroupContainer");
 	console.log(analysisGroup)
@@ -77,8 +82,8 @@ function updateAnalysisGroupDisplay() {
 	}
 }
 
-queueAnalysisBtn.addEventListener('click', (x) => {
-	if (analysisGroup.length < 1) {
+queueAnalysisBtn.addEventListener('click', async (x) => {
+	if (analysisGroup.length < 2) {
 		return;
 	}
 	const response = fetch("api/group/start", {
@@ -87,7 +92,9 @@ queueAnalysisBtn.addEventListener('click', (x) => {
 	});
 	analysisGroup.length = 0;
 	updateAnalysisGroupDisplay();
+	await updateHistoryData();
 });
+
 
 function prepareSimContainers() {
 	const simContainers = document.getElementsByClassName("sim-data");
@@ -239,6 +246,65 @@ r.on('progress', function(event) {
 	uploadStatusIndicator.innerText = (r.progress() * 100).toPrecision(4) + "%";
 });
 
+async function deleteAnalysis(analysisContainer) {
+	resultsId = analysisContainer.querySelector("a").href.split("/").at(-1)
+	const response = fetch("api/group/delete", {
+		method: "POST",
+		body: JSON.stringify({ resultsId: resultsId }),
+	});
+	await updateHistoryData();
+}
+
+
+async function prepareAnalysisContainers() {
+	const analysisContainers = document.getElementsByClassName("analysis-data");
+	if (analysisContainers == null) {
+		return;
+	}
+	const analysisContainerHeightClass = Array.from(analysisContainers[0].classList).filter((x) => String(x).startsWith("h-"))[0]
+	const btnRotation = Array.from(analysisContainers[0].querySelector(".unfold-btn").classList).filter((x) => String(x).startsWith("rotate-"))[0]
+	Array.from(analysisContainers).forEach(async (x) => {
+		const deleteBtn = x.getElementsByClassName('delete-analysis-btn')[0];
+		if (deleteBtn != null) {
+			deleteBtn.addEventListener("click", () => {
+				console.log('got event, requesting analysis delete...');
+				deleteAnalysis(x);
+				updateHistoryData();
+			});
+		}
+
+		const unfoldBtn = x.getElementsByClassName('unfold-btn')[0];
+		if (unfoldBtn != null) {
+			unfoldBtn.addEventListener("click", () => {
+				console.log('unfolding...');
+				x.classList.toggle(analysisContainerHeightClass)
+				unfoldBtn.classList.toggle(btnRotation)
+			});
+		}
+
+	})
+}
+
+
+async function updateHistoryData() {
+	await new Promise(r => setTimeout(r, 50));
+	let response = await fetch("api/group/history", {});
+	let newHTML = await response.text();
+	if (historyContainer.innerHTML !== newHTML) {
+		historyContainer.innerHTML = newHTML;
+		prepareAnalysisContainers();
+		return;
+	}
+	await new Promise(r => setTimeout(r, 50));
+	response = await fetch("api/group/history", {});
+	newHTML = await response.text();
+	if (historyContainer.innerHTML !== newHTML) {
+		historyContainer.innerHTML = newHTML;
+		prepareAnalysisContainers();
+	}
+}
+
 prepareSimContainers();
+prepareAnalysisContainers();
 resetResumableFileUploaderState();
 setInterval(updateSimsData, 10000)
