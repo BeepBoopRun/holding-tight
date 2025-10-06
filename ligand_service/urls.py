@@ -27,6 +27,7 @@ urlpatterns = [
     path("dashboard/api/sim/start", views.start_sim),
     path("dashboard/api/sims-data", views.send_sims_data),
     path("dashboard/api/group/start", views.group_analysis),
+    path("dashboard/api/group/history", views.send_analyses_history),
     path("dashboard/", views.dashboard),
     path("show/<str:sim_id>", views.show),
     path("admin/", admin.site.urls),

@@ -123,6 +123,13 @@ class Simulation(models.Model):
         return get_files_dir(dir)
 
 
+class GroupAnalysis(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    user_key = models.CharField(max_length=32)
+    results_id = models.UUIDField(null=True, default=uuid.uuid4)
+    sims = models.ManyToManyField(Simulation, related_name="simulations")
+
+
 class GPCRdbResidueAPI(models.Model):
     uniprot_identifier = models.CharField(max_length=12)
     response_json = models.JSONField()

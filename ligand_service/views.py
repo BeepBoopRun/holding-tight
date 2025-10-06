@@ -20,11 +20,34 @@ from ligand_service.utils import (
 )
 
 from .models import Simulation
-from .forms import FileInputFormSet, InputDetails
 from . import tasks
 
 logger = logging.getLogger(__name__)
 file_manager = ResumableFilesManager()
+
+
+def start_sim_task(sim: Simulation, session_key: str):
+    if sim.is_not_queued():
+        files = sim.get_trajectory_files()
+        print("Starting simulation!", flush=True)
+        if files is None:
+            return HttpResponse()
+        print("Files are not None!", flush=True)
+        sim.analysis_task_id = tasks.start_simulation(
+            files.topology,
+            files.trajectory,
+            get_user_work_dir(session_key) / sim.dirname,
+            get_user_results_dir(sim.results_id),
+        ).id
+        sim.save()
+
+
+def start_sim(request):
+    sim_name = json.loads(request.body)["sim_name"]
+    session_key = request.session.session_key
+    sim = Simulation.objects.get(user_key=session_key, dirname=sim_name)
+    start_sim_task(sim, session_key)
+    return HttpResponse()
 
 
 def upload_sim(request):
@@ -39,10 +62,12 @@ def upload_sim(request):
         if dir_complete is not None:
             print("Adding new simulation file!", flush=True)
             try:
-                Simulation.objects.create(
+                sim = Simulation.objects.create(
                     dirname=dir_complete.name,
                     user_key=request.session.session_key,
-                ).save()
+                )
+                sim.save()
+                start_sim_task(sim, request.session.session_key)
             except Exception as e:
                 print(f"Db error: {e}")
 
@@ -81,26 +106,6 @@ def delete_sim(request):
     return HttpResponse()
 
 
-def start_sim(request):
-    sim_name = json.loads(request.body)["sim_name"]
-    session_key = request.session.session_key
-    sim = Simulation.objects.get(user_key=session_key, dirname=sim_name)
-    if sim.is_not_queued():
-        files = sim.get_trajectory_files()
-        print("Starting simulation!", flush=True)
-        if files is None:
-            return HttpResponse()
-        print("Files are not None!", flush=True)
-        sim.analysis_task_id = tasks.start_simulation(
-            files.topology,
-            files.trajectory,
-            get_user_work_dir(session_key) / sim.dirname,
-            get_user_results_dir(sim.results_id),
-        ).id
-        sim.save()
-    return HttpResponse()
-
-
 def send_sims_data(request):
     sims = Simulation.objects.filter(user_key=request.session.session_key)
 
@@ -112,6 +117,14 @@ def send_sims_data(request):
         print("FAILED: ", sim.has_failed())
         print("---", flush=True)
 
+    sims_data = render_to_string("submit/sims_data.html", {"user_dirs": sims})
+    headers = {
+        "Content-Type": "text/html; charset=utf-8",
+    }
+    return HttpResponse(sims_data, headers=headers)
+
+
+def send_analyses_history(request):
     sims_data = render_to_string(
         "submit/sims_data.html",
         {"user_dirs": Simulation.objects.filter(user_key=request.session.session_key)},
