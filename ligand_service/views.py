@@ -19,7 +19,7 @@ from ligand_service.utils import (
     get_user_results_dir,
 )
 
-from .models import Simulation
+from .models import GroupAnalysis, Simulation
 from . import tasks
 
 logger = logging.getLogger(__name__)
@@ -138,6 +138,22 @@ def send_analyses_history(request):
 def group_analysis(request):
     sims_group = json.loads(request.body)["sims"]
     print(sims_group, flush=True)
+    used_sims = []
+    for sim_info in sims_group:
+        sim_id = sim_info["simId"]
+        sim = Simulation.objects.get(
+            results_id=sim_id, user_key=request.session.session_key
+        )
+        if sim:
+            used_sims.append(sim)
+
+    print("Creating a group analysis:", used_sims, flush=True)
+    analysis = GroupAnalysis.objects.create(
+        user_key=request.session.session_key,
+    )
+    analysis.sims.set(used_sims)
+    print("Created analysis:", analysis)
+
     return HttpResponse()
 
 
@@ -145,7 +161,14 @@ def dashboard(request):
     return render(
         request,
         "submit/dashboard.html",
-        {"user_dirs": Simulation.objects.filter(user_key=request.session.session_key)},
+        {
+            "user_dirs": Simulation.objects.filter(
+                user_key=request.session.session_key
+            ),
+            "history": GroupAnalysis.objects.filter(
+                user_key=request.session.session_key
+            ),
+        },
     )
 
 
