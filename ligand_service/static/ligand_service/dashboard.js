@@ -7,7 +7,9 @@ const inputTypeSelect = document.getElementById("inputTypeSelect");
 const cancelButton = document.getElementById("cancelButton");
 const browseButton = document.getElementById('browseButton');
 const clearButton = document.getElementById('clearButton');
+const queueAnalysisBtn = document.getElementById("queueAnalysisBtn");
 
+const analysisGroup = new Array();
 
 async function updateSimsData() {
 	animate_class = Array.from(refreshSpinner.classList).filter((c) => c.startsWith('animate'))[0];
@@ -56,6 +58,37 @@ function getSimName(any_inner_element) {
 }
 
 
+function updateAnalysisGroupDisplay() {
+	const analysisGroupContainer = document.getElementById("analysisGroupContainer");
+	console.log(analysisGroup)
+	const analysisInfoTemplate = document.querySelector(".analysis-info.hidden")
+	const emptyAnalysisInfo = document.querySelector(".empty-analysis-info.hidden")
+	analysisGroupContainer.innerHTML = ""
+	analysisGroup.forEach((x) => {
+		const infoNode = analysisInfoTemplate.cloneNode();
+		infoNode.classList.remove("hidden");
+		infoNode.innerText = x.simName;
+		analysisGroupContainer.appendChild(infoNode);
+	});
+	if (analysisGroupContainer.innerHTML == "") {
+		const emptyAnalysisInfoNode = emptyAnalysisInfo.cloneNode(true);
+		emptyAnalysisInfoNode.classList.remove("hidden");
+		analysisGroupContainer.appendChild(emptyAnalysisInfoNode)
+	}
+}
+
+queueAnalysisBtn.addEventListener('click', (x) => {
+	if (analysisGroup.length < 1) {
+		return;
+	}
+	const response = fetch("api/group/start", {
+		method: "POST",
+		body: JSON.stringify({ sims: analysisGroup }),
+	});
+	analysisGroup.length = 0;
+	updateAnalysisGroupDisplay();
+});
+
 function prepareSimContainers() {
 	const simContainers = document.getElementsByClassName("sim-data");
 
@@ -78,11 +111,19 @@ function prepareSimContainers() {
 
 		}
 
-		const showResultsBtn = x.getElementsByClassName('show-results-btn')[0];
-		if (showResultsBtn != null) {
-			showResultsBtn.addEventListener("click", () => {
-				console.log('got event, showing results...');
-				location.href = `/show/${showResultsBtn.dataset.simId}`
+		const addToAnalysisBtn = x.getElementsByClassName('add-to-analysis-btn')[0];
+		if (addToAnalysisBtn != null) {
+			addToAnalysisBtn.addEventListener("click", () => {
+				const seeResultNode = addToAnalysisBtn.parentNode.querySelector("a");
+				const simId = seeResultNode.href.split("/").at(-1);
+				for (const simInfo of analysisGroup) {
+					if (simInfo.simId == simId) {
+						console.log("Already on the list, skipping...")
+						return
+					}
+				}
+				analysisGroup.push({ "simName": simName, "simId": simId });
+				updateAnalysisGroupDisplay();
 			});
 		}
 
@@ -168,9 +209,6 @@ inputTypeSelect.addEventListener('change', (event) => {
 	resetResumableFileUploaderState();
 });
 
-
-
-
 confirmButton.addEventListener("click", (event) => {
 	const fileCount = r.files.length;
 	if (fileCount <= 0) {
@@ -200,8 +238,6 @@ confirmButton.addEventListener("click", (event) => {
 r.on('progress', function(event) {
 	uploadStatusIndicator.innerText = (r.progress() * 100).toPrecision(4) + "%";
 });
-
-
 
 prepareSimContainers();
 resetResumableFileUploaderState();

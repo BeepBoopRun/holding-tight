@@ -1,4 +1,4 @@
 from django.contrib import admin
-from ligand_service.models import Submission
+from ligand_service.models import Simulation
 
-admin.site.register(Submission)
+admin.site.register(Simulation)

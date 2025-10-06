@@ -11,11 +11,7 @@ import plotly.graph_objects as go
 import xmltodict
 import numpy as np
 
-
-from .models import Submission, SubmissionTask
 from .contacts import (
-    get_numbering,
-    get_pdb,
     get_trajectory_frame_count,
     create_translation_dict_by_blast,
     get_interactions_from_trajectory,
@@ -47,52 +43,6 @@ def save_file(file_handle, path_to_save_location: Path):
     with open(path_to_save_location, "wb+") as destination:
         for chunk in file_handle.chunks():
             destination.write(chunk)
-
-
-@log_exceptions
-def find_interactions(submission_task: SubmissionTask):
-    submission = submission_task.submission
-    print(submission, flush=True)
-    results_dir = submission.get_results_directy()
-    results_dir.mkdir(exist_ok=True)
-    logger.info("Getting interactions from PLIP...")
-    for form in submission.submittedform_set.all():
-        files = form.get_trajectory_files()
-        file_id = str(form.form_id)
-        get_interactions_from_trajectory(
-            topology_file=files.topology,
-            trajectory_file=files.trajectory,
-            workdir=results_dir / f"interactions_data_{file_id}",
-            frames=[
-                x
-                for x in range(
-                    get_trajectory_frame_count(files.topology, files.trajectory)
-                )
-            ],
-        )
-    logger.info("Getting interactions from PLIP finished!")
-
-    submission.finished_at = timezone.now()
-    submission.save()
-
-
-def prepare_numbering_pdb(submission_task: SubmissionTask):
-    submission = submission_task.submission
-    results_dir = submission.get_results_directy()
-    results_dir.mkdir(exist_ok=True)
-    for form in submission.submittedform_set.all():
-        files = form.get_trajectory_files()
-        file_id = str(form.form_id)
-        get_pdb(
-            topology_file=files.topology,
-            trajectory_file=files.trajectory,
-            outfile=results_dir / f"top{file_id}.pdb",
-        )
-        get_numbering(
-            pdb_file=results_dir / f"top{file_id}.pdb",
-            outfile=results_dir / f"num_top{file_id}.pdb",
-        )
-    logger.info("Numbering PDB files complete")
 
 
 def extract_data_from_plip_results(
@@ -450,118 +400,6 @@ def analyse_simulation(
     return run_data
 
 
-def analyse_submission(submission_task: SubmissionTask):
-    submission = submission_task.submission
-    results_path = submission.get_results_directy()
-    group_data = {"status": "TO BE ADDED!"}
-    runs_data = []
-
-    for form in submission.submittedform_set.all():
-        run_data = {}
-        file_id = str(form.form_id)
-        out = extract_data_from_plip_results(
-            results_path / f"interactions_data_{file_id}" / "results"
-        )
-        if out is None:
-            continue
-        df = out[0]
-        ligand_df = out[1]
-        # preparing interaction display
-        if submission.common_numbering:
-            files = form.get_trajectory_files()
-            #            dic = create_translation_dict_by_pdb(results_path / f"num_top{file_id}.pdb")
-            #
-            #            def get_numbering_pdb(row):
-            #                assert dic is not None
-            #                key = (row['residue_chain'], row['residue_name'], str(row['residue_number']))
-            #                if key in dic:
-            #                    return dic[key][1]
-            #
-            #            df["PDB numbering"] = df.apply(get_numbering_pdb, axis=1)
-            #            print(df, flush=True)
-            #
-            dic, scores = create_translation_dict_by_blast(
-                files.topology, files.trajectory
-            )
-            run_data["alignment_scores"] = scores
-
-            def get_numbering_blast(row):
-                assert dic is not None
-                key = (
-                    row["residue_chain"],
-                    row["residue_name"],
-                    str(row["residue_number"]),
-                )
-                if key in dic:
-                    return dic[key]
-
-            df["GPCRdb numbering"] = df.apply(get_numbering_blast, axis=1)
-            run_data["interaction_graph"] = create_interaction_area_graph(df)
-            df.to_csv(
-                path_or_buf=(results_path / f"result{file_id}_aggregated.csv"),
-                index=False,
-            )
-            print(f"Dataframe from form {file_id} is saved!", flush=True)
-        # preparing ligand information display
-
-        for ligand in ligand_df.to_dict(orient="records"):
-            simulation_frame_count = get_trajectory_frame_count(
-                *form.get_trajectory_files()
-            )
-            if (
-                ligand["frames_seen"] / simulation_frame_count
-                < LIGAND_DETECTION_THRESHOLD
-            ):
-                print(
-                    f"Skipping ligand below threshold, seen in {ligand['frames_seen']} out of {simulation_frame_count}",
-                    flush=True,
-                )
-                continue
-            id = inchikey_to_chebiID.get(ligand["inchikey"], None)
-            name = inchikey_to_name.get(ligand["inchikey"], None)
-            ligands_arr = run_data.get("ligands", [])
-            ligands_arr.append(
-                {
-                    "id": id,
-                    "name": name,
-                    "img": ligand.get("img", ""),
-                    "frames_seen": ligand["frames_seen"],
-                }
-            )
-            run_data["ligands"] = ligands_arr
-
-        run_data["table"] = create_getcontacts_table(df)
-        run_data["map"] = create_time_resolved_map(df)
-        run_data["value"] = form.value
-        run_data["id"] = str(form.form_id)
-        run_data["name"] = f'"{form.name}"' if form.name else str(form.form_id)
-        runs_data.append(run_data)
-
-    results_path = submission.get_results_directy()
-    with open(results_path / "group_data.json", "w") as f:
-        json.dump(group_data, f)
-
-    with open(results_path / "runs_data.json", "w") as f:
-        json.dump(runs_data, f)
-
-    return (group_data, runs_data)
-
-
-def queue_task(submission: Submission, task_type: SubmissionTask.TaskType):
-    task = SubmissionTask.objects.create(
-        submission=submission, status="P", task_type=task_type
-    )
-    if task_type == SubmissionTask.TaskType.INTERACTIONS:
-        queue_interactions(task)
-    elif task_type == SubmissionTask.TaskType.NUMBERING:
-        queue_numbering(task)
-    elif task_type == SubmissionTask.TaskType.ANALYSIS:
-        queue_analysis(task)
-    else:
-        # unreachable
-        assert False
-
-
 @task()
 def start_simulation(
     top_file: Path, traj_file: Path, work_dir: Path, results_dir: Path
@@ -575,54 +413,3 @@ def start_simulation(
     get_interactions_from_trajectory(top_file, traj_file, plip_dir, frames_dir, frames)
     analyse_simulation(top_file, traj_file, plip_dir, results_dir)
     return len(frames)
-
-
-# could be written better to make less db calls
-
-
-@log_exceptions
-@db_task()
-def queue_interactions(task: SubmissionTask):
-    task.status = "R"
-    task.save()
-    try:
-        find_interactions(task)
-    except Exception as e:
-        logger.warning(f"Interaction tasks failed! Error: {e}")
-        task.status = "F"
-        task.save()
-        return
-    task.status = "S"
-    task.save()
-
-
-@log_exceptions
-@db_task()
-def queue_analysis(task: SubmissionTask):
-    task.status = "R"
-    task.save()
-    try:
-        analyse_submission(task)
-    except Exception as e:
-        logger.warning(f"Analysis failed! Error: {e}")
-        task.status = "F"
-        task.save()
-        return
-    task.status = "S"
-    task.save()
-
-
-@log_exceptions
-@db_task()
-def queue_numbering(task: SubmissionTask):
-    task.status = "R"
-    task.save()
-    try:
-        prepare_numbering_pdb(task)
-    except Exception as e:
-        logger.warning(f"Numbering tasks failed! Error: {e}")
-        task.status = "F"
-        task.save()
-        return
-    task.status = "S"
-    task.save()

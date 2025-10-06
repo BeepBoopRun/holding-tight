@@ -4,6 +4,7 @@ huey.*
 db.*
 
 .ruff_cache
+pyrightconfig.json
 
 blast/*
 chebi/*
