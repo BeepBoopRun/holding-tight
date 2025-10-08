@@ -346,6 +346,7 @@ def analyse_simulation(
     df = out[0]
     ligand_df = out[1]
     dic, scores = create_translation_dict_by_blast(top_file, traj_file)
+    run_data["name"] = top_file.parent.name
     run_data["alignment_scores"] = scores
 
     def get_numbering_blast(row):
@@ -398,6 +399,23 @@ def analyse_simulation(
     print("Analysis finished! Results available at: ", results_dir, flush=True)
 
     return run_data
+
+
+def analyse_group(results_dirs: list[Path]):
+    sims_data = []
+    for dir in results_dirs:
+        print("RESULT DIR:", dir)
+        print([x for x in dir.iterdir()], flush=True)
+        with open(dir / "run_data.json") as f:
+            raw = f.read()
+            data = json.loads(raw)
+            sims_data.append(data)
+
+    print("SIM NAMES: ", end="")
+    for sim_data in sims_data:
+        print(sim_data["name"])
+
+    return None
 
 
 @task()

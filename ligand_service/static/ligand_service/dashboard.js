@@ -7,9 +7,11 @@ const inputTypeSelect = document.getElementById("inputTypeSelect");
 const cancelButton = document.getElementById("cancelButton");
 const browseButton = document.getElementById('browseButton');
 const clearButton = document.getElementById('clearButton');
+const addExperimentalValsBtn = document.getElementById('addExperimentalValsBtn');
 const queueAnalysisBtn = document.getElementById("queueAnalysisBtn");
 const clearQueueAnalysisBtn = document.getElementById("clearQueueAnalysisBtn");
 const historyContainer = document.getElementById("analysisHistoryContainer");
+const analysisGroupContainer = document.getElementById("analysisGroupContainer");
 
 const analysisGroup = new Array();
 
@@ -61,24 +63,56 @@ function getSimName(any_inner_element) {
 }
 
 
-clearQueueAnalysisBtn.addEventListener("click", () => { analysisGroup.length = 0; updateAnalysisGroupDisplay() });
+
+let experimentalValsCount = 0
+addExperimentalValsBtn.addEventListener("click", () => {
+	const insideContainer = analysisGroupContainer.querySelector(".empty-analysis-info")
+	console.log(insideContainer)
+	if (insideContainer == null) {
+		experimentalValsCount += 1;
+	}
+	updateAnalysisGroupDisplay()
+});
+
+clearQueueAnalysisBtn.addEventListener("click", () => { analysisGroup.length = 0; experimentalValsCount = 0; updateAnalysisGroupDisplay() });
+
+function cloneAndInsertNodeTemplate(node, dest) {
+	const clonedNode = node.cloneNode()
+	clonedNode.classList.remove("hidden");
+	dest.appendChild(clonedNode);
+}
 
 function updateAnalysisGroupDisplay() {
-	const analysisGroupContainer = document.getElementById("analysisGroupContainer");
 	console.log(analysisGroup)
 	const analysisInfoTemplate = document.querySelector(".analysis-info.hidden")
+	const valueNameTemplate = document.querySelector(".value-name.hidden")
+	const valueInputTemplate = document.querySelector(".value-input.hidden")
+	const emptyCellTemplate = document.querySelector(".empty-cell.hidden")
 	const emptyAnalysisInfo = document.querySelector(".empty-analysis-info.hidden")
+	if (experimentalValsCount > 0) {
+		analysisGroupContainer.style.gridTemplateColumns = `auto repeat(${experimentalValsCount}, 1fr)`;
+	} else {
+		analysisGroupContainer.style.gridTemplateColumns = "";
+	}
 	analysisGroupContainer.innerHTML = ""
+
+	if (experimentalValsCount > 0) {
+		cloneAndInsertNodeTemplate(emptyCellTemplate, analysisGroupContainer)
+	}
+	for (let i = 0; i < experimentalValsCount; i++) {
+		cloneAndInsertNodeTemplate(valueNameTemplate, analysisGroupContainer)
+	}
 	analysisGroup.forEach((x) => {
 		const infoNode = analysisInfoTemplate.cloneNode();
 		infoNode.classList.remove("hidden");
 		infoNode.innerText = x.simName;
 		analysisGroupContainer.appendChild(infoNode);
+		for (let i = 0; i < experimentalValsCount; i++) {
+			cloneAndInsertNodeTemplate(valueInputTemplate, analysisGroupContainer)
+		}
 	});
 	if (analysisGroupContainer.innerHTML == "") {
-		const emptyAnalysisInfoNode = emptyAnalysisInfo.cloneNode(true);
-		emptyAnalysisInfoNode.classList.remove("hidden");
-		analysisGroupContainer.appendChild(emptyAnalysisInfoNode)
+		cloneAndInsertNodeTemplate(emptyAnalysisInfo, analysisGroupContainer)
 	}
 }
 
@@ -205,7 +239,9 @@ clearButton.addEventListener("click", () => {
 	r.cancel();
 });
 
+
 /*
+	* 
 r.on('filesAdded', function(arrayAdded, arraySkipped) {
 	r.files = arrayAdded
 	displayCurrentFiles();

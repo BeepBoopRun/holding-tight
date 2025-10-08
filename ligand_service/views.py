@@ -1,4 +1,5 @@
 from pathlib import Path
+from time import sleep
 import uuid
 import json
 import logging
@@ -147,6 +148,8 @@ def run_group_analysis(request):
         if sim:
             used_sims.append(sim)
 
+    results_dirs = [get_user_results_dir(sim.results_id) for sim in used_sims]
+    tasks.analyse_group(results_dirs)
     print("Creating a group analysis:", used_sims, flush=True)
     analysis = GroupAnalysis.objects.create(
         user_key=request.session.session_key,
