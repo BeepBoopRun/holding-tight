@@ -138,7 +138,12 @@ def send_analyses_history(request):
 
 def run_group_analysis(request):
     sims_group = json.loads(request.body)["sims"]
+    exp_data = json.loads(request.body)["expData"]
+
+    print("PRINTING SIM DATA")
     print(sims_group, flush=True)
+    print(exp_data, flush=True)
+
     used_sims = []
     for sim_info in sims_group:
         sim_id = sim_info["simId"]
@@ -149,12 +154,25 @@ def run_group_analysis(request):
             used_sims.append(sim)
 
     results_dirs = [get_user_results_dir(sim.results_id) for sim in used_sims]
+
     tasks.analyse_group(results_dirs)
     print("Creating a group analysis:", used_sims, flush=True)
     analysis = GroupAnalysis.objects.create(
         user_key=request.session.session_key,
     )
     analysis.sims.set(used_sims)
+    group_result_id = analysis.results_id
+
+    for idx, result_dir in enumerate(results_dirs):
+        data = {"Simulation name": sims_group[idx]["simName"]}
+        for key in exp_data.keys():
+            split = key.split(",")
+            if len(split) == 1:
+                print("Got value name key", exp_data[key])
+            elif len(split) == 3:
+                print("Got value", exp_data[split])
+        with open(result_dir / "exp_data.json", "w") as f:
+            pass
     print("Created analysis:", analysis)
 
     return HttpResponse()

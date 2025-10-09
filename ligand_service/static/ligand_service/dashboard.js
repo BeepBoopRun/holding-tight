@@ -1,3 +1,5 @@
+'use strict'
+
 const refreshSpinner = document.getElementById('refreshSpinner');
 const simsContainer = document.getElementById('simsContainer')
 const selectedDirInfo = document.getElementById('filesInfo');
@@ -13,10 +15,13 @@ const clearQueueAnalysisBtn = document.getElementById("clearQueueAnalysisBtn");
 const historyContainer = document.getElementById("analysisHistoryContainer");
 const analysisGroupContainer = document.getElementById("analysisGroupContainer");
 
+let selectedInput = null;
+
 const analysisGroup = new Array();
+const analysisGroupExpData = new Map();
 
 async function updateSimsData() {
-	animate_class = Array.from(refreshSpinner.classList).filter((c) => c.startsWith('animate'))[0];
+	const animate_class = Array.from(refreshSpinner.classList).filter((c) => c.startsWith('animate'))[0];
 	refreshSpinner.classList.remove(animate_class);
 	void refreshSpinner.offsetWidth;
 	await new Promise(r => setTimeout(r, 20));
@@ -66,20 +71,34 @@ function getSimName(any_inner_element) {
 
 let experimentalValsCount = 0
 addExperimentalValsBtn.addEventListener("click", () => {
-	const insideContainer = analysisGroupContainer.querySelector(".empty-analysis-info")
-	console.log(insideContainer)
+	const insideContainer = analysisGroupContainer.querySelector(".empty-analysis-info");
+	console.log(insideContainer);
 	if (insideContainer == null) {
 		experimentalValsCount += 1;
 	}
-	updateAnalysisGroupDisplay()
+	updateAnalysisGroupDisplay();
 });
 
-clearQueueAnalysisBtn.addEventListener("click", () => { analysisGroup.length = 0; experimentalValsCount = 0; updateAnalysisGroupDisplay() });
+function clearQueueAnalysis() {
+	analysisGroup.length = 0;
+	experimentalValsCount = 0;
+	analysisGroupExpData.clear();
+	updateAnalysisGroupDisplay();
+}
+
+clearQueueAnalysisBtn.addEventListener("click", () => {
+	clearQueueAnalysis();
+});
 
 function cloneAndInsertNodeTemplate(node, dest) {
-	const clonedNode = node.cloneNode()
+	const clonedNode = node.cloneNode(true)
 	clonedNode.classList.remove("hidden");
 	dest.appendChild(clonedNode);
+	return clonedNode;
+}
+
+function isNumeric(value) {
+	return value !== '' && isFinite(value);
 }
 
 function updateAnalysisGroupDisplay() {
@@ -100,19 +119,50 @@ function updateAnalysisGroupDisplay() {
 		cloneAndInsertNodeTemplate(emptyCellTemplate, analysisGroupContainer)
 	}
 	for (let i = 0; i < experimentalValsCount; i++) {
-		cloneAndInsertNodeTemplate(valueNameTemplate, analysisGroupContainer)
+		const nameNode = cloneAndInsertNodeTemplate(valueNameTemplate, analysisGroupContainer)
+		const key = i.toString()
+		const currentVal = analysisGroupExpData.get(key)
+		console.log("CURRENT VAL", currentVal)
+		if (currentVal != null) {
+			nameNode.value = currentVal
+		}
+		nameNode.addEventListener('change', (event) => {
+			analysisGroupExpData.set(i.toString(), event.target.value)
+		});
 	}
-	analysisGroup.forEach((x) => {
+	analysisGroup.forEach((element, index) => {
 		const infoNode = analysisInfoTemplate.cloneNode();
 		infoNode.classList.remove("hidden");
-		infoNode.innerText = x.simName;
+		infoNode.innerText = element.simName;
 		analysisGroupContainer.appendChild(infoNode);
 		for (let i = 0; i < experimentalValsCount; i++) {
-			cloneAndInsertNodeTemplate(valueInputTemplate, analysisGroupContainer)
+			const key = `${i},${index}`;
+			const inputNode = cloneAndInsertNodeTemplate(valueInputTemplate, analysisGroupContainer);
+			const currentVal = analysisGroupExpData.get(key)
+			console.log("CURRENT VAL", currentVal)
+			if (currentVal != null) {
+				inputNode.value = currentVal
+			}
+			inputNode.addEventListener('input', (event) => {
+				const target = event.target;
+				if (!isNumeric(event.target.value)) {
+					target.classList.add("border-red-500");
+					target.value = "";
+					target.placeholder = "Value must be a number";
+					analysisGroupExpData.set(key, null);
+					return;
+				}
+				target.classList.remove("border-red-500");
+				analysisGroupExpData.set(key, target.value);
+			});
+
 		}
 	});
 	if (analysisGroupContainer.innerHTML == "") {
 		cloneAndInsertNodeTemplate(emptyAnalysisInfo, analysisGroupContainer)
+	}
+	for (const [key, value] of analysisGroupExpData.entries()) {
+		console.log("KEY", key, "VALUE", value)
 	}
 }
 
@@ -120,11 +170,30 @@ queueAnalysisBtn.addEventListener('click', async (x) => {
 	if (analysisGroup.length < 2) {
 		return;
 	}
+
+	if (experimentalValsCount > 0) {
+		const expData = analysisGroupContainer.querySelectorAll(".value-input");
+		let wasMissingData = false;
+		for (const input of expData) {
+			if (input.value == "") {
+				console.log("Missing data!");
+				console.log(input);
+				input.classList.add("border-red-500");
+				wasMissingData = true;
+			}
+		}
+		if (wasMissingData) {
+			console.log("Missing data, returning...")
+			return
+		}
+		const colNames = analysisGroupContainer.querySelectorAll(".value-name");
+	}
+
 	const response = fetch("api/group/start", {
 		method: "POST",
-		body: JSON.stringify({ sims: analysisGroup }),
+		body: JSON.stringify({ sims: analysisGroup, expData: Object.fromEntries(analysisGroupExpData) }),
 	});
-	analysisGroup.length = 0;
+	clearQueueAnalysis();
 	updateAnalysisGroupDisplay();
 	await updateHistoryData();
 });
@@ -283,7 +352,7 @@ r.on('progress', function(event) {
 });
 
 async function deleteAnalysis(analysisContainer) {
-	resultsId = analysisContainer.querySelector("a").href.split("/").at(-1)
+	const resultsId = analysisContainer.querySelector("a").href.split("/").at(-1)
 	const response = fetch("api/group/delete", {
 		method: "POST",
 		body: JSON.stringify({ resultsId: resultsId }),
@@ -294,7 +363,7 @@ async function deleteAnalysis(analysisContainer) {
 
 async function prepareAnalysisContainers() {
 	const analysisContainers = document.getElementsByClassName("analysis-data");
-	if (analysisContainers == null) {
+	if (analysisContainers == null || analysisContainers.length < 1) {
 		return;
 	}
 	const analysisContainerHeightClass = Array.from(analysisContainers[0].classList).filter((x) => String(x).startsWith("h-"))[0]
