@@ -1,6 +1,5 @@
 from pathlib import Path
-from time import sleep
-import uuid
+import csv
 import json
 import logging
 import shutil
@@ -110,13 +109,13 @@ def delete_sim(request):
 def send_sims_data(request):
     sims = Simulation.objects.filter(user_key=request.session.session_key)
 
-    for sim in sims:
-        print("SIM STATUS")
-        print("NOT QUEUED: ", sim.is_not_queued())
-        print("RUNNING: ", sim.is_running())
-        print("FINISHED: ", sim.is_finished())
-        print("FAILED: ", sim.has_failed())
-        print("---", flush=True)
+    #    for sim in sims:
+    #        print("SIM STATUS")
+    #        print("NOT QUEUED: ", sim.is_not_queued())
+    #        print("RUNNING: ", sim.is_running())
+    #        print("FINISHED: ", sim.is_finished())
+    #        print("FAILED: ", sim.has_failed())
+    #        print("---", flush=True)
 
     sims_data = render_to_string("submit/sims_data.html", {"user_dirs": sims})
     headers = {
@@ -128,7 +127,11 @@ def send_sims_data(request):
 def send_analyses_history(request):
     sims_data = render_to_string(
         "submit/history.html",
-        {"history": GroupAnalysis.objects.filter(user_key=request.session.session_key)},
+        {
+            "history": reversed(
+                GroupAnalysis.objects.filter(user_key=request.session.session_key)
+            )
+        },
     )
     headers = {
         "Content-Type": "text/html; charset=utf-8",
@@ -140,10 +143,6 @@ def run_group_analysis(request):
     sims_group = json.loads(request.body)["sims"]
     exp_data = json.loads(request.body)["expData"]
 
-    print("PRINTING SIM DATA")
-    print(sims_group, flush=True)
-    print(exp_data, flush=True)
-
     used_sims = []
     for sim_info in sims_group:
         sim_id = sim_info["simId"]
@@ -154,8 +153,6 @@ def run_group_analysis(request):
             used_sims.append(sim)
 
     results_dirs = [get_user_results_dir(sim.results_id) for sim in used_sims]
-
-    tasks.analyse_group(results_dirs)
     print("Creating a group analysis:", used_sims, flush=True)
     analysis = GroupAnalysis.objects.create(
         user_key=request.session.session_key,
@@ -163,17 +160,44 @@ def run_group_analysis(request):
     analysis.sims.set(used_sims)
     group_result_id = analysis.results_id
 
-    for idx, result_dir in enumerate(results_dirs):
-        data = {"Simulation name": sims_group[idx]["simName"]}
-        for key in exp_data.keys():
-            split = key.split(",")
-            if len(split) == 1:
-                print("Got value name key", exp_data[key])
-            elif len(split) == 3:
-                print("Got value", exp_data[split])
-        with open(result_dir / "exp_data.json", "w") as f:
-            pass
-    print("Created analysis:", analysis)
+    column_names = {}
+    values = {}
+    sim_count = len(sims_group)
+
+    for key in exp_data.keys():
+        split = key.split(",")
+        if len(split) == 1:
+            column_names[key] = exp_data[key]
+        elif len(split) == 2:
+            print("Got value", exp_data[key])
+            val_arr = values.get(split[0], None)
+            if val_arr is None:
+                values[split[0]] = [None] * sim_count
+            values[split[0]][int(split[1])] = exp_data[key]
+
+    named_values = {}
+    for idx, column_name in column_names.items():
+        named_values[column_name] = values.pop(idx)
+
+    for idx, vals in values.items():
+        named_values[f"Value {idx}"] = vals
+
+    parsed_data = {
+        "Simulation name": [sim["simName"] for sim in sims_group],
+        "Simulation ID": [sim["simId"] for sim in sims_group],
+        **named_values,
+    }
+
+    dir = get_user_results_dir(str(group_result_id))
+    dir.mkdir(parents=True, exist_ok=True)
+    with open(dir / "exp_data.csv", "w") as f:
+        writer = csv.writer(f)
+        writer.writerow([key for key in parsed_data.keys()])
+        for idx in range(sim_count):
+            print(idx, flush=True)
+            writer.writerow([value[idx] for (key, value) in parsed_data.items()])
+
+    tasks.analyse_group(results_dirs, dir)
 
     return HttpResponse()
 
@@ -195,8 +219,8 @@ def dashboard(request):
             "user_dirs": Simulation.objects.filter(
                 user_key=request.session.session_key
             ),
-            "history": GroupAnalysis.objects.filter(
-                user_key=request.session.session_key
+            "history": reversed(
+                GroupAnalysis.objects.filter(user_key=request.session.session_key)
             ),
         },
     )
@@ -229,6 +253,22 @@ def show(request, sim_id):
         "search/results.html",
         {
             "run": run_data,
+        },
+    )
+
+
+def show_group(request, group_id):
+    print("GOT SIM_ID:", group_id)
+    group_result_dir = get_user_results_dir(group_id)
+    if not group_result_dir.is_dir():
+        return HttpResponseRedirect("/dashboard/")
+    with open(get_user_results_dir(group_id) / "group_data.json") as f:
+        group_data = json.load(f)
+    return render(
+        request,
+        "search/results_group.html",
+        {
+            "group": group_data,
         },
     )
 

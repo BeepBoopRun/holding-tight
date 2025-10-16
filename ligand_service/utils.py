@@ -8,15 +8,15 @@ from django.http.request import QueryDict
 from django.conf import settings
 
 
-def get_user_uploads_dir(session_key):
+def get_user_uploads_dir(session_key) -> Path:
     return settings.BASE_DIR / "user_uploads" / session_key / "uploads"
 
 
-def get_user_results_dir(results_id):
+def get_user_results_dir(results_id) -> Path:
     return settings.BASE_DIR / "user_uploads" / str(results_id)
 
 
-def get_user_work_dir(session_key):
+def get_user_work_dir(session_key) -> Path:
     return settings.BASE_DIR / "user_uploads" / session_key / "work"
 
 

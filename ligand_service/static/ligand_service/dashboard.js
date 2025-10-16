@@ -71,10 +71,12 @@ function getSimName(any_inner_element) {
 
 let experimentalValsCount = 0
 addExperimentalValsBtn.addEventListener("click", () => {
-	const insideContainer = analysisGroupContainer.querySelector(".empty-analysis-info");
-	console.log(insideContainer);
-	if (insideContainer == null) {
-		experimentalValsCount += 1;
+	const emptyInsideContainer = analysisGroupContainer.querySelector(".empty-analysis-info");
+	console.log(emptyInsideContainer);
+	if (emptyInsideContainer == null) {
+		if (experimentalValsCount < 1) {
+			experimentalValsCount += 1;
+		}
 	}
 	updateAnalysisGroupDisplay();
 });
@@ -163,6 +165,20 @@ function updateAnalysisGroupDisplay() {
 	}
 	for (const [key, value] of analysisGroupExpData.entries()) {
 		console.log("KEY", key, "VALUE", value)
+	}
+}
+
+async function updateHistoryData() {
+	for (const timeout of [50, 50]) {
+		await new Promise(r => setTimeout(r, timeout));
+		let response = await fetch("api/group/history", {});
+		let newHTML = await response.text();
+		if (historyContainer.innerHTML !== newHTML) {
+			console.log("Changing the HTML!")
+			historyContainer.innerHTML = newHTML;
+			prepareAnalysisContainers();
+			return;
+		}
 	}
 }
 
@@ -391,23 +407,6 @@ async function prepareAnalysisContainers() {
 }
 
 
-async function updateHistoryData() {
-	await new Promise(r => setTimeout(r, 50));
-	let response = await fetch("api/group/history", {});
-	let newHTML = await response.text();
-	if (historyContainer.innerHTML !== newHTML) {
-		historyContainer.innerHTML = newHTML;
-		prepareAnalysisContainers();
-		return;
-	}
-	await new Promise(r => setTimeout(r, 50));
-	response = await fetch("api/group/history", {});
-	newHTML = await response.text();
-	if (historyContainer.innerHTML !== newHTML) {
-		historyContainer.innerHTML = newHTML;
-		prepareAnalysisContainers();
-	}
-}
 
 prepareSimContainers();
 prepareAnalysisContainers();

@@ -10,6 +10,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import xmltodict
 import numpy as np
+import pandas as pd
 
 from .contacts import (
     get_trajectory_frame_count,
@@ -359,7 +360,7 @@ def analyse_simulation(
         if key in dic:
             return dic[key]
 
-    df["GPCRdb numbering"] = df.apply(get_numbering_blast, axis=1)
+    df["Aligned numbering"] = df.apply(get_numbering_blast, axis=1)
     run_data["interaction_graph"] = create_interaction_area_graph(df)
     results_dir.mkdir(exist_ok=True, parents=True)
     df.to_csv(
@@ -401,7 +402,149 @@ def analyse_simulation(
     return run_data
 
 
-def analyse_group(results_dirs: list[Path]):
+def _reslabel(name, num):
+    return f"{name}-{num}"
+
+
+def _resnum_key(label):
+    try:
+        return int(str(label).split("-")[-1])
+    except Exception:
+        return 1e9
+
+
+def contact_fraction_matrix(
+    group_df: pd.DataFrame, itype: str | None = None
+) -> pd.DataFrame:
+    df = group_df.copy()
+
+    df["ResidueLabel"] = [
+        _reslabel(rn, rr) for rn, rr in zip(df["residue_name"], df["residue_number"])
+    ]
+    total_frames = (
+        df.groupby("Simulation name")["frame"].nunique().rename("total_frames")
+    )
+
+    if itype is not None:
+        df = df[df["interaction_type"] == itype]
+
+    df["frame"] = pd.to_numeric(df["frame"], errors="coerce")
+    df = df.dropna(subset=["frame", "Simulation name", "ResidueLabel"])
+
+    pres = (
+        df[["Simulation name", "ResidueLabel", "frame"]]
+        .drop_duplicates()
+        .groupby(["Simulation name", "ResidueLabel"])
+        .agg(frames_with_contact=("frame", "nunique"))
+        .reset_index()
+    )
+
+    pres = pres.merge(total_frames, on="Simulation name", how="left")
+
+    pres["FractionPercent"] = 100.0 * pres["frames_with_contact"] / pres["total_frames"]
+
+    mat = pres.pivot(
+        index="Simulation name", columns="ResidueLabel", values="FractionPercent"
+    ).fillna(0.0)
+
+    mat = mat[sorted(mat.columns, key=_resnum_key)]
+
+    return mat
+
+
+def plot_contact_fraction_heatmap(
+    group_df: pd.DataFrame,
+    title_prefix: str = "Contact fraction per residue",
+    colorscale: str = "magma_r",
+):
+    # ALTERNATYWNIE colorscale "magma_r"??????
+
+    types = [t for t in pd.unique(group_df["interaction_type"]) if pd.notna(t)]
+    types_sorted = sorted(types)
+
+    mats = {"All types": contact_fraction_matrix(group_df, None)}
+    for t in types_sorted:
+        mats[t] = contact_fraction_matrix(group_df, t)
+
+    all_sims = sorted(set().union(*[set(m.index) for m in mats.values()]))
+    all_res = sorted(
+        set().union(*[set(m.columns) for m in mats.values()]), key=_resnum_key
+    )
+
+    for k in mats:
+        mats[k] = mats[k].reindex(index=all_sims, columns=all_res, fill_value=0.0)
+
+    init_key = "All types"
+    Z0 = mats[init_key].values
+    X = all_res
+    Y = all_sims
+
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=Z0,
+            x=X,
+            y=Y,
+            zmin=0,
+            zmax=100,
+            colorscale=colorscale,
+            colorbar=dict(
+                title=dict(
+                    text="% of trajectory",
+                    side="right",  # po prawej stronie, ale domyślnie góra → my to poprawimy
+                ),
+                tickfont=dict(size=10),
+                xpad=10,
+            ),
+            hovertemplate="Simulation: %{y}<br>Residue: %{x}<br>Fraction: %{z:.1f}%<extra></extra>",
+        )
+    )
+
+    fig.update_layout(
+        paper_bgcolor=PAGE_BG_COLOR,
+        title=f"{title_prefix} — {init_key}",
+        xaxis_title="Residue",
+        yaxis_title="Simulation",
+        xaxis=dict(tickangle=270),
+    )
+
+    buttons = []
+    for key in [init_key] + types_sorted:
+        buttons.append(
+            dict(
+                label=key,
+                method="update",
+                args=[
+                    {"z": [mats[key].values]},
+                    {"title": {"text": f"{title_prefix} — {key}"}},
+                ],
+            )
+        )
+
+    fig.update_layout(
+        updatemenus=[
+            dict(
+                type="dropdown",
+                buttons=buttons,
+                x=1.02,
+                y=1.15,
+                xanchor="left",
+                yanchor="top",
+                bgcolor=PAGE_BG_COLOR,
+                bordercolor="lightgray",
+            )
+        ]
+    )
+
+    fig_html = fig.to_html(
+        full_html=False,
+        include_plotlyjs="cdn",
+        config={"displaylogo": False, "responsive": True},
+    )
+
+    return fig_html
+
+
+def analyse_group(results_dirs: list[Path], group_result_dir: Path):
     sims_data = []
     for dir in results_dirs:
         print("RESULT DIR:", dir)
@@ -411,9 +554,53 @@ def analyse_group(results_dirs: list[Path]):
             data = json.loads(raw)
             sims_data.append(data)
 
+    interactions = []
+    for dir in results_dirs:
+        print("RESULT DIR:", dir)
+        print([x for x in dir.iterdir()], flush=True)
+        with open(dir / "interactions.csv") as f:
+            interactions.append(
+                (
+                    dir.name,
+                    pd.read_csv(f),
+                )
+            )
+
+    with open(group_result_dir / "exp_data.csv") as f:
+        exp_data = pd.read_csv(f)
+
+    prepared_dfs = []
+    for id, df in interactions:
+        sim_name = exp_data.loc[
+            exp_data["Simulation ID"] == id, "Simulation name"
+        ].iloc[0]
+        if len(exp_data.columns.tolist()) > 2:
+            value_name = exp_data.columns.tolist()[2]
+            value = exp_data.loc[exp_data["Simulation ID"] == id, value_name].iloc[0]
+            df[value_name] = value
+        df["Simulation name"] = sim_name
+        prepared_dfs.append(df)
+
+    group_df = pd.concat(prepared_dfs)
+    print(group_df)
+    group_df.to_csv(group_result_dir / "group.csv", index=False)
+    print("RESDIR:", group_result_dir, flush=True)
+
     print("SIM NAMES: ", end="")
     for sim_data in sims_data:
         print(sim_data["name"])
+
+    interaction_freq_map = plot_contact_fraction_heatmap(group_df)
+
+    group_data = {
+        "exp_data": exp_data.to_dict(orient="split", index=False),
+        "interaction_freq_map": interaction_freq_map,
+    }
+
+    print("WRITING GROUP DATA", flush=True)
+    with open(group_result_dir / "group_data.json", "w") as f:
+        json.dump(group_data, f)
+    print("COMPLETED WRITING GROUP DATA", flush=True)
 
     return None
 

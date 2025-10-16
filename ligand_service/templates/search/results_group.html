@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<script>
+    function showContent(event) {
+	const parent = event.target.closest('.content-window');
+	const elem = event.target;
+	const infoElement = parent.querySelector('.info');
+	infoElement.classList.toggle("hidden");
+	elem.classList.toggle('rotate-270')
+    }
+    function downloadFile(event) {
+	jobID = window.location.href.split("/").at(-1);
+	filename = `group.csv`;
+	request_url = `/download/${jobID}/${filename}`;
+	const link = document.createElement("a");
+	link.href = request_url;
+	link.download = `coral_interactions.csv`;
+	link.click();
+    }
+</script>
+
+<div id="details" class="text-lg">
+    <div class="flex-col items-center justify-center content-center">
+	<div>
+	    <div class="info px-2 pb-2 rounded-lg">
+		<div class="content-window">
+		    <div class="flex text-xl border rounded-lg p-2 bg-indigo-100  mt-1 w-full text-left items-center" >
+			<svg class="size-8 hover:bg-indigo-200 rounded-lg cursor-pointer" onclick="showContent(event)" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+			    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+			</svg>
+			<p class="ml-2">
+			Included simulations
+			</p>
+			<svg title="Download data" class="size-8 ml-auto hover:bg-indigo-200 rounded-lg cursor-pointer" onclick="downloadFile(event)" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" >
+			    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+			</svg>
+		    </div>
+		    <div class="info p-2 text-lg border-x border-b border-dotted rounded-lg">
+			<table class="rounded-lg my-2 border-separate">
+			    <tr class="bg-gray-300 rounded-lg">
+				{% for colname in group.exp_data.columns %}
+				<th class="border p-2 first:rounded-tl-lg last:rounded-tr-lg">{{ colname }}</th>
+				{% endfor %}
+			    </tr>
+			    {% for row in group.exp_data.data %}
+			    <tr class="row bg-gray-200">
+				{% for value in row %}
+				{% if forloop.counter == 2 %}
+				<td class="[.row:last-child_&:last-child]:rounded-br-lg [.row:last-child_&:first-child]:rounded-bl-lg p-2 border"><a href="/show/{{ value }}" class="text-blue-500 underline underline-offset-1"> {{ value }} </a></td>
+				{% else %}
+				<td class="[.row:last-child_&:last-child]:rounded-br-lg [.row:last-child_&:first-child]:rounded-bl-lg p-2 border">{{ value }}</td>
+				{% endif %}
+				{% endfor %}
+			    </tr>
+			    {% endfor %}
+			</table> 
+		    </div>
+		</div>
+		<div class="content-window">
+		    <div class="flex text-xl border rounded-lg p-2 bg-indigo-100  mt-1 w-full text-left items-center" >
+			<svg class="size-8 hover:bg-indigo-200 rounded-lg cursor-pointer" onclick="showContent(event)" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+			    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+			</svg>
+			<p class="ml-2">
+			Interactions by frequency and type
+			</p>
+		    </div>
+		    <div class="info p-2 text-lg border-x border-b border-dotted rounded-lg">
+			{{ group.interaction_freq_map|safe }}
+		    </div>
+		</div>
+		<div>
+		</div>
+	    </div>
+	</div>
+    </div>
+</div>
+
+{% endblock %}

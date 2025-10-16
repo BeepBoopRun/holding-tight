@@ -31,6 +31,7 @@ urlpatterns = [
     path("dashboard/api/group/history", views.send_analyses_history),
     path("dashboard/", views.dashboard),
     path("show/<str:sim_id>", views.show),
+    path("show/group/<str:group_id>", views.show_group),
     path("admin/", admin.site.urls),
     path("", views.redirect_to_dashboard),
     path("about/", views.render_about),
@@ -42,4 +43,6 @@ if settings.DEBUG:
     # Include django_browser_reload URLs only in DEBUG mode
     urlpatterns += [
         path("__reload__/", include("django_browser_reload.urls")),
+        path("rerun/<str:sim_id>", views.show),
+        path("rerun/group/<str:group_id>", views.show_group),
     ]
