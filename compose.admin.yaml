@@ -9,13 +9,9 @@ services:
       - "8000:8000" 
     command: >
       sh -c '
-        ls -Zd user_uploads
-        touch ./user_uploads/test_file
-        echo "IDENTITY: $(whoami)"
         ./wait-for-it.sh db:5432 &&
         micromamba run python manage.py migrate --no-input &&
         micromamba run python manage.py tailwind install --no-input && 
-        echo "STARTING THE SERVER" &&
         micromamba run python manage.py tailwind dev
       '    
   nginx: !reset

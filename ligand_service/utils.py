@@ -20,6 +20,10 @@ def get_user_work_dir(session_key) -> Path:
     return settings.BASE_DIR / "user_uploads" / session_key / "work"
 
 
+# Possible bugs: (file name, size) need to be globaly unique, not perfect!
+# Front-end salt maybe?
+
+
 @dataclass
 class ResumableFile:
     relative_path: str
@@ -82,7 +86,7 @@ class ResumableFilesManager:
     managed_files: dict[str, ResumableFile]
     managed_directories: dict[Path, list[ResumableFile]]
     directory_file_count: dict[Path, list[int]]
-    # how many files received, how many expected
+    # directory_file_count = [files_received_count, files_expected_count]
 
     def __init__(self) -> None:
         self.managed_files = {}

@@ -5,13 +5,10 @@ import logging
 import shutil
 
 from django.http import HttpResponse, HttpResponseRedirect
-from django.http.response import HttpResponseBadRequest
 from django.shortcuts import render
-from django.conf import settings
 from django.http import FileResponse, Http404
 from django.template.loader import render_to_string
 
-from ligand_service.contacts import get_trajectory_frame_count
 from ligand_service.utils import (
     ResumableFilesManager,
     get_user_uploads_dir,
@@ -273,6 +270,7 @@ def show_group(request, group_id):
     )
 
 
+# fallback, normally handled by nginx
 def download_file(request, filepath):
     filepath = Path("./user_uploads/" + filepath)
     if filepath.is_file():

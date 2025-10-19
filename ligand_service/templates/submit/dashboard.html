@@ -3,14 +3,19 @@
 {% load static %}
 
 {% block content %}
-<details open class="my-4 text-l rounded-lg border p-2 bg-gray-300">
+<details open class="mt-4 text-l rounded-lg border p-2 bg-gray-300">
     <summary class="text-2xl  cursor-pointer">How to use CORAL-MD?</summary>
-    This tool processes molecular dynamics (MD) trajectories to examine how ligands interact with their protein targets. It identifies and characterizes interaction types such as hydrogen bonds, hydrophobic contacts, and aromatic stacking, and presents the results through time-resolved visualizations. Users can also choose to provide experimental data, allowing direct comparison between simulation outcomes and measured values. An example of the tool in action can be seen using <a href="/example-submission" class="text-blue-700 underline-offset-2 underline">this link</a>.
+    This tool processes molecular dynamics (MD) trajectories to examine how ligands interact with their protein targets. It identifies and characterizes interaction types such as hydrogen bonds, hydrophobic contacts, and aromatic stacking, and presents the results through time-resolved visualizations. Multiple uploaded simulations can be used to create a group analysis. User can choose to provide experimental data to see the correlation between experiment outcomes and simulation results. An example can be seen under <a href="/example-submission" class="text-blue-700 underline-offset-2 underline">this link</a>.
+    <br>
+    <br>
+    To reduce possible errors, the tool is capable of automatically recognizing and removing objects other than proteins and ligands. This process is not perfect however, it is recommended to provide already cleaned trajectories. 
     <br>
     <br>
     For technical details, go to the About section.
     </p>
 </details>
+
+<p class="my-4 text-xl">Please cite as...(TBD)</p>
 
 <div class="border rounded-lg p-2 ">
     <div class="mb-4 text-xl border-b -m-2 rounded-t-lg p-2 bg-gray-300 flex flex-nowrap items-center overflow-x-scroll">
@@ -79,7 +84,6 @@
     </div>
 </div>
 
-<p class="mt-2 text-xl">Please cite as...(TBD)</p>
 
 <button class="text-xl border rounded-lg p-2 bg-red-400 hover:bg-red-200 hover:cursor-pointer" onclick="downloadLogs(event, 'webserver.log')">
     Download webserver logs
