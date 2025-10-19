@@ -121,7 +121,10 @@ class ResumableFilesManager:
         file_handle: BinaryIO,
         main_write_directory: Path,
     ) -> tuple[bool, Path | None]:
-        file_id = resumable_data.get("resumableIdentifier", None)
+        file_id = resumable_data.get("resumableIdentifier", "") + resumable_data.get(
+            "uploadUUID", ""
+        )
+        print("FILE ID:", file_id, flush=True)
         base_dir = Path(resumable_data.get("resumableRelativePath") or "").parts[0]
         temp_dir = main_write_directory / "temp" / base_dir
         write_directory = self.get_writing_directory(
@@ -170,8 +173,12 @@ class ResumableFilesManager:
         write_directory = self.get_writing_directory(
             resumable_data, main_write_directory
         )
-        file_id = resumable_data.get("resumableIdentifier", None)
-        if file_id is None:
+        file_id = resumable_data.get("resumableIdentifier", "") + resumable_data.get(
+            "uploadUUID", ""
+        )
+        print("FILE ID:", file_id, flush=True)
+
+        if file_id == "":
             return False, None
         if write_directory not in self.managed_directories:
             return False, None

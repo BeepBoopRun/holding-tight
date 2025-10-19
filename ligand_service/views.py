@@ -40,9 +40,10 @@ def start_sim_task(sim: Simulation, session_key: str):
 
 
 def start_sim(request):
-    sim_name = json.loads(request.body)["sim_name"]
+    body = json.loads(request.body)
+    print(body, flush=True)
     session_key = request.session.session_key
-    sim = Simulation.objects.get(user_key=session_key, dirname=sim_name)
+    sim = Simulation.objects.get(user_key=session_key, sim_id=body["sim_id"])
     start_sim_task(sim, session_key)
     return HttpResponse()
 
@@ -93,13 +94,16 @@ def upload_sim(request):
 
 
 def delete_sim(request):
-    sim_name = json.loads(request.body)["sim_name"]
-    sim = Simulation.objects.get(user_key=request.session.session_key, dirname=sim_name)
+    body = json.loads(request.body)
+    print(body, flush=True)
+    sim = Simulation.objects.get(
+        user_key=request.session.session_key, sim_id=body["sim_id"]
+    )
     sim.delete()
     session_key = request.session.session_key
     shutil.rmtree(get_user_uploads_dir(session_key) / sim.dirname, ignore_errors=True)
     shutil.rmtree(get_user_work_dir(session_key) / sim.dirname, ignore_errors=True)
-    shutil.rmtree(get_user_results_dir(str(sim.results_id)), ignore_errors=True)
+    shutil.rmtree(get_user_results_dir(str(sim.sim_id)), ignore_errors=True)
     return HttpResponse()
 
 
@@ -144,7 +148,7 @@ def run_group_analysis(request):
     for sim_info in sims_group:
         sim_id = sim_info["simId"]
         sim = Simulation.objects.get(
-            results_id=sim_id, user_key=request.session.session_key
+            sim_id=sim_id, user_key=request.session.session_key
         )
         if sim:
             used_sims.append(sim)

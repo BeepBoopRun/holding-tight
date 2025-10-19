@@ -44,19 +44,19 @@ async function updateSimsData() {
 }
 
 
-async function deleteSim(sim_name) {
+async function deleteSim(simId) {
 	const response = fetch("api/sim/delete", {
 		method: "POST",
-		body: JSON.stringify({ sim_name: sim_name }),
+		body: JSON.stringify({ "sim_id": simId }),
 	});
 	await updateSimsData();
 }
 
 
-async function startSim(sim_name) {
+async function startSim(simId) {
 	const response = fetch("api/sim/start", {
 		method: "POST",
-		body: JSON.stringify({ sim_name: sim_name }),
+		body: JSON.stringify({ "sim_id": simId }),
 	});
 	await updateSimsData();
 }
@@ -67,6 +67,10 @@ function getSimName(any_inner_element) {
 	return simData.getElementsByClassName('sim-name')[0].innerText;
 }
 
+
+function getSimId(any_inner_element) {
+	return any_inner_element.closest('.sim-data').dataset.simId
+}
 
 
 let experimentalValsCount = 0
@@ -220,11 +224,11 @@ function prepareSimContainers() {
 
 	Array.from(simContainers).forEach((x) => {
 		const deleteBtn = x.getElementsByClassName('delete-sim-btn')[0];
-		const simName = getSimName(deleteBtn);
+		const simId = getSimId(deleteBtn);
 		if (deleteBtn != null) {
 			deleteBtn.addEventListener("click", () => {
 				console.log('got event, requesting delete...');
-				deleteSim(simName);
+				deleteSim(simId);
 			});
 		}
 
@@ -232,7 +236,7 @@ function prepareSimContainers() {
 		if (startSimBtn != null) {
 			startSimBtn.addEventListener("click", () => {
 				console.log('got event, requesting start...');
-				startSim(simName);
+				startSim(simId);
 			});
 
 		}
@@ -351,7 +355,7 @@ confirmButton.addEventListener("click", (event) => {
 	uploadStatusIndicator.classList.remove("hidden");
 	confirmButton.classList.remove("rounded-r-lg");
 
-	r.opts.query = { 'fileCount': fileCount };
+	r.opts.query = { 'fileCount': fileCount, 'uploadUUID': self.crypto.randomUUID() };
 	// naming the directory
 	if (selectedInput === "topTrj") {
 		fileNames = [r.files[0].fileName, r.files[1].fileName].sort()

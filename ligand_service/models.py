@@ -44,15 +44,11 @@ class Simulation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     dirname = models.CharField(max_length=128)
     user_key = models.CharField(max_length=32)
-    analysis_task_id = models.UUIDField(null=True, default=None)
-    results_id = models.UUIDField(null=True, default=uuid.uuid4)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["dirname", "user_key"], name="enforce_unique_directories"
-            )
-        ]
+    analysis_task_id = models.UUIDField(null=True, default=None, unique=True)
+    sim_id = models.UUIDField(null=True, default=uuid.uuid4, unique=True)
+    # internal, used for start / delete
+    results_id = models.UUIDField(null=True, default=uuid.uuid4, unique=True)
+    # shared, used to find and share results
 
     def __str__(self):
         return self.dirname
@@ -80,7 +76,7 @@ class Simulation(models.Model):
             return False
         return False
 
-    def has_failed(self) -> bool:
+    def has_failed(self) -> bool | Exception:
         if self.analysis_task_id is None:
             return False
         try:
