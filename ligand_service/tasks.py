@@ -39,6 +39,8 @@ LIGAND_DETECTION_THRESHOLD = 0.7
 INCHIKEY_TO_NAME_JSON_PATH = Path("./chebi/inchikey_to_name.json")
 INCHIKEY_TO_CHEBIID_JSON_PATH = Path("./chebi/inchikey_to_chebiID.json")
 
+INTERACTION_TYPE_RENAME = {}
+
 
 def save_file(file_handle, path_to_save_location: Path):
     with open(path_to_save_location, "wb+") as destination:
@@ -160,7 +162,6 @@ def create_getcontacts_table(get_contacts_df: pd.DataFrame) -> str:
     fig.update_layout(COMMON_LAYOUT)
     table = fig.to_html(
         full_html=False,
-        include_plotlyjs="cdn",
         config={"displaylogo": False, "responsive": True},
     )
     return table
@@ -186,7 +187,6 @@ def create_interaction_area_graph(contacts_df: pd.DataFrame) -> str:
     fig.update_layout(COMMON_LAYOUT)
     graph = fig.to_html(
         full_html=False,
-        include_plotlyjs="cdn",
         config={"displaylogo": False, "responsive": True},
     )
     return graph
@@ -314,7 +314,6 @@ def create_time_resolved_map(contacts_df: pd.DataFrame) -> str:
 
     graph = fig.to_html(
         full_html=False,
-        include_plotlyjs="cdn",
         config={"displaylogo": False, "responsive": True},
     )
     return graph
@@ -537,7 +536,6 @@ def plot_contact_fraction_heatmap(
 
     fig_html = fig.to_html(
         full_html=False,
-        include_plotlyjs="cdn",
         config={"displaylogo": False, "responsive": True},
     )
 
@@ -579,6 +577,7 @@ def analyse_group(results_dirs: list[Path], group_result_dir: Path):
             value = exp_data.loc[exp_data["Simulation ID"] == id, value_name].iloc[0]
             df[value_name] = value
         df["Simulation name"] = sim_name
+        df["Simulation ID"] = id
         prepared_dfs.append(df)
 
     group_df = pd.concat(prepared_dfs)

@@ -25,7 +25,8 @@
 	    </svg>
 	</div>
 	<p class="text-2xl ml-2">Upload your simulations:</p>
-	<select name="SimulationType" id="inputTypeSelect" class="h-12 ml-auto bg-gray-400/60 border rounded-lg p-2 m-2 cursor-pointer">
+	<div class="ml-auto flex flex-nowrap items-center h-12 p-2">
+	<select name="SimulationType" id="inputTypeSelect" class="h-12 bg-gray-400/60 border rounded-lg p-2 m-2 cursor-pointer">
 	    <option value="maestroDir">Maestro directory</option>
 	    <option value="topTrj">Topology/Trajectory files</option>
 	</select>
@@ -46,6 +47,8 @@
 		Confirm
 	    </div>
 	    <p id="progressNumerical" class="hidden cursor-pointer bg-slate-500/60 hover:bg-slate-500/40 rounded-r-lg border-l h-full p-2">0.00</p>
+	</div>
+		
 	</div>
     </div>
     <div id="simsContainer">

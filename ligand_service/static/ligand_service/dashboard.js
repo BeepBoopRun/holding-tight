@@ -225,6 +225,7 @@ function prepareSimContainers() {
 	Array.from(simContainers).forEach((x) => {
 		const deleteBtn = x.getElementsByClassName('delete-sim-btn')[0];
 		const simId = getSimId(deleteBtn);
+		const simName = getSimName(deleteBtn);
 		if (deleteBtn != null) {
 			deleteBtn.addEventListener("click", () => {
 				console.log('got event, requesting delete...');
@@ -245,14 +246,14 @@ function prepareSimContainers() {
 		if (addToAnalysisBtn != null) {
 			addToAnalysisBtn.addEventListener("click", () => {
 				const seeResultNode = addToAnalysisBtn.parentNode.querySelector("a");
-				const simId = seeResultNode.href.split("/").at(-1);
+				const simResultId = seeResultNode.href.split("/").at(-1);
 				for (const simInfo of analysisGroup) {
 					if (simInfo.simId == simId) {
 						console.log("Already on the list, skipping...")
 						return
 					}
 				}
-				analysisGroup.push({ "simName": simName, "simId": simId });
+				analysisGroup.push({ "simName": simName, "simId": simResultId });
 				updateAnalysisGroupDisplay();
 			});
 		}

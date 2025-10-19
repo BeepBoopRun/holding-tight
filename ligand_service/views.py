@@ -33,7 +33,7 @@ def start_sim_task(sim: Simulation, session_key: str):
         sim.analysis_task_id = tasks.start_simulation(
             files.topology,
             files.trajectory,
-            get_user_work_dir(session_key) / sim.dirname,
+            get_user_work_dir(session_key) / str(sim.sim_id),
             get_user_results_dir(sim.results_id),
         ).id
         sim.save()
@@ -51,11 +51,14 @@ def start_sim(request):
 def upload_sim(request):
     if not request.session.session_key:
         request.session.create()
+    if request.POST.get("uploadUUID", "") == "":
+        return HttpResponse(status=204)
     if request.method == "POST":
         _, dir_complete = file_manager.handle_resumable_post_request(
             request.POST,
             request.FILES.get("file", None),
-            get_user_uploads_dir(request.session.session_key),
+            get_user_uploads_dir(request.session.session_key)
+            / request.POST.get("uploadUUID", ""),
         )
         if dir_complete is not None:
             print("Adding new simulation file!", flush=True)
@@ -63,6 +66,7 @@ def upload_sim(request):
                 sim = Simulation.objects.create(
                     dirname=dir_complete.name,
                     user_key=request.session.session_key,
+                    sim_id=request.POST.get("uploadUUID", ""),
                 )
                 sim.save()
                 start_sim_task(sim, request.session.session_key)
@@ -71,7 +75,9 @@ def upload_sim(request):
 
     elif request.method == "GET":
         has_chunk, dir_complete = file_manager.handle_resumable_get_request(
-            request.GET, get_user_uploads_dir(request.session.session_key)
+            request.GET,
+            get_user_uploads_dir(request.session.session_key)
+            / request.POST.get("uploadUUID", ""),
         )
         if dir_complete:
             try:
@@ -99,16 +105,23 @@ def delete_sim(request):
     sim = Simulation.objects.get(
         user_key=request.session.session_key, sim_id=body["sim_id"]
     )
-    sim.delete()
+    sim.was_deleted = True
+    sim.save()
+    # sim.delete()
     session_key = request.session.session_key
-    shutil.rmtree(get_user_uploads_dir(session_key) / sim.dirname, ignore_errors=True)
-    shutil.rmtree(get_user_work_dir(session_key) / sim.dirname, ignore_errors=True)
-    shutil.rmtree(get_user_results_dir(str(sim.sim_id)), ignore_errors=True)
+    shutil.rmtree(
+        get_user_uploads_dir(session_key) / str(sim.sim_id),
+        ignore_errors=True,
+    )
+    shutil.rmtree(get_user_work_dir(session_key) / str(sim.sim_id), ignore_errors=True)
+    shutil.rmtree(get_user_results_dir(str(sim.results_id)), ignore_errors=True)
     return HttpResponse()
 
 
 def send_sims_data(request):
-    sims = Simulation.objects.filter(user_key=request.session.session_key)
+    sims = Simulation.objects.filter(
+        user_key=request.session.session_key, was_deleted=False
+    )
 
     #    for sim in sims:
     #        print("SIM STATUS")
@@ -146,9 +159,9 @@ def run_group_analysis(request):
 
     used_sims = []
     for sim_info in sims_group:
-        sim_id = sim_info["simId"]
+        sim_res_id = sim_info["simId"]
         sim = Simulation.objects.get(
-            sim_id=sim_id, user_key=request.session.session_key
+            results_id=sim_res_id, user_key=request.session.session_key
         )
         if sim:
             used_sims.append(sim)
@@ -218,7 +231,7 @@ def dashboard(request):
         "submit/dashboard.html",
         {
             "user_dirs": Simulation.objects.filter(
-                user_key=request.session.session_key
+                user_key=request.session.session_key, was_deleted=False
             ),
             "history": reversed(
                 GroupAnalysis.objects.filter(user_key=request.session.session_key)

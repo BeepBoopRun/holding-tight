@@ -50,6 +50,8 @@ class Simulation(models.Model):
     results_id = models.UUIDField(null=True, default=uuid.uuid4, unique=True)
     # shared, used to find and share results
 
+    was_deleted = models.BooleanField(default=False)
+
     def __str__(self):
         return self.dirname
 
@@ -86,6 +88,7 @@ class Simulation(models.Model):
             return e
         return False
 
+    # NOTE: Could be remade with huey signals, didn't notice them at the start!
     def get_analysis_status(self) -> str:
         if self.is_not_queued():
             return "Not queued"
@@ -93,7 +96,7 @@ class Simulation(models.Model):
             # TODO: Add runinfo
             files = self.get_trajectory_files()
             frame_count = get_trajectory_frame_count(files.topology, files.trajectory)
-            plip_dir = get_user_work_dir(self.user_key) / self.dirname / "plip"
+            plip_dir = get_user_work_dir(self.user_key) / str(self.sim_id) / "plip"
             if not plip_dir.is_dir():
                 return "Queued"
             frames_done = len([x for x in plip_dir.iterdir()])
@@ -107,8 +110,8 @@ class Simulation(models.Model):
         else:
             return "Unknown"
 
-    def get_sim_dir(self):
-        return get_user_uploads_dir(self.user_key) / self.dirname
+    def get_sim_dir(self) -> Path:
+        return get_user_uploads_dir(self.user_key) / str(self.sim_id)
 
     def get_trajectory_files(self) -> TrajectoryFiles | None:
         dir = self.get_sim_dir()
@@ -139,6 +142,7 @@ def get_files_maestro(dir: Path) -> TrajectoryFiles | None:
         print(subdir, flush=True)
         if subdir.name.endswith("_trj"):
             trj_stump = subdir / "clickme.dtr"
+            # creating an empty file is needed, for vmd to load the trajectory
             open(trj_stump, "w").close()
             chosen_trj = trj_stump
             print("chosen trj!", flush=True)
