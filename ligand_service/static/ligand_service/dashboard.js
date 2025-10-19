@@ -356,7 +356,25 @@ confirmButton.addEventListener("click", (event) => {
 	uploadStatusIndicator.classList.remove("hidden");
 	confirmButton.classList.remove("rounded-r-lg");
 
-	r.opts.query = { 'fileCount': fileCount, 'uploadUUID': self.crypto.randomUUID() };
+	function toHex(bits) {
+		return "0123456789abcdef"[bits];
+	}
+
+	// check if context is secure
+	let uuid4 = '';
+	if (location.protocol === 'https:') {
+		uuid4 = self.crypto.randomUUID();
+		console.log('detected secure context')
+	} else {
+		const bytes = new Uint8Array(16);
+		crypto.getRandomValues(bytes);
+		const hex = Array.from(bytes).flatMap((num) => [toHex((num & 0xF0) >> 4), toHex(num & 0xF)]);
+		hex[12] = '4'
+		hex[16] = '89ab'[hex[16].charCodeAt(0) % 4]
+		uuid4 = `${hex.slice(0, 8).join("")}-${hex.slice(8, 12).join("")}-${hex.slice(12, 16).join("")}-${hex.slice(16, 20).join("")}-${hex.slice(20, 32).join("")}`
+	}
+	console.log(uuid4)
+	r.opts.query = { 'fileCount': fileCount, 'uploadUUID': uuid4, };
 	// naming the directory
 	if (selectedInput === "topTrj") {
 		fileNames = [r.files[0].fileName, r.files[1].fileName].sort()
