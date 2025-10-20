@@ -87,10 +87,12 @@
 			    </div>
 			    Name: {{ ligand.name|default_if_none:"Unknown" }} <br>
 			    {% if ligand.id  %}
-			    ChEBI ID: <a href="https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:{{ ligand.id }}" class="hover:underline text-blue-600 inline">{{ ligand.id }}</a> <br>
+			    ChEBI ID: <a href="https://www.ebi.ac.uk/chebi/searchId.do?chebiId={{ ligand.id }}" class="hover:underline text-blue-600 inline">{{ ligand.id }}</a> <br>
 			    {% else %}
 			    ChEBI ID: Unknown <br>
 			    {% endif %}
+			    InChIKey: {{ ligand.inchikey|default_if_none:"Unknown" }} <br>
+			    SMILES: {{ ligand.smiles|default_if_none:"Unknown" }} <br>
 			    Detected in {{ ligand.frames_seen }} frame{{ ligand.frames_seen|pluralize }} <br>
 			</div>
 			{% endfor %}

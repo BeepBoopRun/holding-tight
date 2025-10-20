@@ -1,10 +1,8 @@
 from ftplib import FTP
 import gzip
 import json
+import csv
 from pathlib import Path
-
-
-from rdkit.Chem import inchi
 
 ftp = FTP("ftp.ebi.ac.uk")
 ftp.login()
@@ -15,31 +13,46 @@ print("Downloading files from ChEBI...")
 
 try:
     with open(chebi_dir / "compounds.tsv.gz", "wb") as fp:
+        print("Downloading compounds list...")
         ftp.retrbinary("RETR compounds.tsv.gz", fp.write)
-    with open(chebi_dir / "chebiId_inchi.tsv", "wb") as fp:
-        ftp.retrbinary("RETR chebiId_inchi.tsv", fp.write)
+    with open(chebi_dir / "structures.tsv.gz", "wb") as fp:
+        print("Downloading structures to create chebiID to InChIKey map...")
+        ftp.retrbinary("RETR structures.tsv.gz", fp.write)
 
-    inchikey_to_chebiID = {}
-    chebiID_to_name = {}
-    with open(chebi_dir / "chebiId_inchi.tsv") as f:
-        for line in f.readlines()[1:]:
-            cols = line.split("\t")
-            inchikey = inchi.InchiToInchiKey(cols[1])
-            inchikey_to_chebiID[inchikey] = cols[0]
-
-    with gzip.open(chebi_dir / "compounds.tsv.gz", encoding="cp1252", mode="rt") as f:
-        for line in f.readlines()[1:]:
-            cols = line.split("\t")
-            if cols[5] == "null":
+    inchikey_to_compoundId = {}
+    compoundId_to_name = {}
+    compoundId_to_chebiID = {}
+    with gzip.open(chebi_dir / "structures.tsv.gz", encoding="utf-8", mode="rt") as f:
+        f.readline()
+        for line in csv.reader(f, delimiter="\t"):
+            if line[1] == "" or line[6] == "":
                 continue
-            chebiID_to_name[cols[0]] = cols[5]
+            #        print("InChIKey:", line[6], "compound_id:", line[1])
+            inchikey_to_compoundId[line[6]] = line[1]
+
+    with gzip.open(chebi_dir / "compounds.tsv.gz", encoding="utf-8", mode="rt") as f:
+        f.readline()
+        for line in csv.reader(f, delimiter="\t"):
+            if line[0] == "" or line[6] == "":
+                continue
+            #        print("compound_id:", line[0], "name:", line[1])
+            #        print("compound_id:", line[0], "chebiID:", line[6])
+            compoundId_to_name[line[0]] = line[1]
+            compoundId_to_chebiID[line[0]] = line[6]
 
     inchikey_to_name = {}
-    for inchikey, chebiID in inchikey_to_chebiID.items():
-        name = chebiID_to_name.get(chebiID, None)
+    for inchikey, compoundId in inchikey_to_compoundId.items():
+        name = compoundId_to_name.get(compoundId, None)
         if name is None:
             continue
         inchikey_to_name[inchikey] = name
+
+    inchikey_to_chebiID = {}
+    for inchikey, compoundId in inchikey_to_compoundId.items():
+        chebiID = compoundId_to_chebiID.get(compoundId, None)
+        if chebiID is None:
+            continue
+        inchikey_to_chebiID[inchikey] = chebiID
 
     with open(chebi_dir / "inchikey_to_chebiID.json", "w") as f:
         json.dump(inchikey_to_chebiID, f)

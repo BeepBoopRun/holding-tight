@@ -35,6 +35,9 @@ def log_exceptions(func):
 
 PAGE_BG_COLOR = "#e5e7eb"
 COMMON_LAYOUT = dict(margin=dict(l=0, r=0, t=0, b=0), paper_bgcolor=PAGE_BG_COLOR)
+COMMON_LAYOUT_TABLE = dict(
+    margin=dict(l=20, r=20, t=20, b=20), paper_bgcolor=PAGE_BG_COLOR
+)
 LIGAND_DETECTION_THRESHOLD = 0.7
 INCHIKEY_TO_NAME_JSON_PATH = Path("./chebi/inchikey_to_name.json")
 INCHIKEY_TO_CHEBIID_JSON_PATH = Path("./chebi/inchikey_to_chebiID.json")
@@ -96,7 +99,7 @@ def extract_data_from_plip_results(
                     ligand_info["name"].append(ident["longname"])
                     ligand_info["ligtype"].append(ident["ligtype"])
                     ligand_info["smiles"].append(ident["smiles"])
-                    ligand_info["inchikey"].append(ident["inchikey"])
+                    ligand_info["inchikey"].append(inchikey)
 
                 # mol = Chem.MolFromSmiles(ident["smiles"])
                 # logger.info(f"Molecule created from SMILES")
@@ -144,7 +147,9 @@ def create_getcontacts_table(get_contacts_df: pd.DataFrame) -> str:
         data=[
             go.Table(
                 header=dict(
-                    values=list(get_contacts_df.columns), line_color=PAGE_BG_COLOR
+                    values=list(get_contacts_df.columns),
+                    line_color=PAGE_BG_COLOR,
+                    height=25,
                 ),
                 cells=dict(
                     values=[
@@ -154,12 +159,13 @@ def create_getcontacts_table(get_contacts_df: pd.DataFrame) -> str:
                         for col in get_contacts_df.columns
                     ],
                     line_color=PAGE_BG_COLOR,
+                    height=25,
                 ),
             )
         ]
     )
     fig.update_traces(columnwidth=[100, 300])
-    fig.update_layout(COMMON_LAYOUT)
+    fig.update_layout(COMMON_LAYOUT_TABLE)
     table = fig.to_html(
         full_html=False,
         config={"displaylogo": False, "responsive": True},
@@ -385,6 +391,8 @@ def analyse_simulation(
                 "name": name,
                 "img": ligand.get("img", ""),
                 "frames_seen": ligand["frames_seen"],
+                "smiles": ligand["smiles"],
+                "inchikey": ligand["inchikey"],
             }
         )
 
