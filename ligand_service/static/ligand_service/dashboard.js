@@ -21,6 +21,15 @@ const analysisGroup = new Array();
 const analysisGroupExpData = new Map();
 
 async function updateSimsData() {
+
+	for (const simContainer of simsContainer.children) {
+		if (!simContainer.querySelector("input").classList.contains("hidden")) {
+			console.log("Input open, not updating...")
+			return;
+		}
+
+	}
+
 	const animate_class = Array.from(refreshSpinner.classList).filter((c) => c.startsWith('animate'))[0];
 	refreshSpinner.classList.remove(animate_class);
 	void refreshSpinner.offsetWidth;
@@ -59,6 +68,15 @@ async function startSim(simId) {
 		body: JSON.stringify({ "sim_id": simId }),
 	});
 	await updateSimsData();
+}
+
+async function renameSim(simId, simName) {
+	const response = fetch("api/sim/rename", {
+		method: "POST",
+		body: JSON.stringify({ "sim_id": simId, "sim_name": simName }),
+	});
+	await updateSimsData();
+	await updateHistoryData();
 }
 
 function getSimName(any_inner_element) {
@@ -114,14 +132,16 @@ function updateAnalysisGroupDisplay() {
 	const valueInputTemplate = document.querySelector(".value-input.hidden")
 	const emptyCellTemplate = document.querySelector(".empty-cell.hidden")
 	const emptyAnalysisInfo = document.querySelector(".empty-analysis-info.hidden")
+	const removeBtnTemplate = document.querySelector(".remove-btn.hidden")
 	if (experimentalValsCount > 0) {
-		analysisGroupContainer.style.gridTemplateColumns = `auto repeat(${experimentalValsCount}, 1fr)`;
+		analysisGroupContainer.style.gridTemplateColumns = `auto auto repeat(${experimentalValsCount}, 1fr)`;
 	} else {
-		analysisGroupContainer.style.gridTemplateColumns = "";
+		analysisGroupContainer.style.gridTemplateColumns = `min-content auto`;
 	}
 	analysisGroupContainer.innerHTML = ""
 
 	if (experimentalValsCount > 0) {
+		cloneAndInsertNodeTemplate(emptyCellTemplate, analysisGroupContainer)
 		cloneAndInsertNodeTemplate(emptyCellTemplate, analysisGroupContainer)
 	}
 	for (let i = 0; i < experimentalValsCount; i++) {
@@ -137,6 +157,14 @@ function updateAnalysisGroupDisplay() {
 		});
 	}
 	analysisGroup.forEach((element, index) => {
+		const removeBtn = cloneAndInsertNodeTemplate(removeBtnTemplate, analysisGroupContainer)
+		removeBtn.addEventListener('click', (event) => {
+			const btnIndex = Array.from(analysisGroupContainer.children).indexOf(removeBtn);
+			for (let i = 0; i < 2 + experimentalValsCount; i++) {
+				const node = analysisGroupContainer.childNodes[btnIndex];
+				if (node) analysisGroupContainer.removeChild(node);
+			}
+		});
 		const infoNode = analysisInfoTemplate.cloneNode();
 		infoNode.classList.remove("hidden");
 		infoNode.innerText = element.simName;
@@ -166,6 +194,7 @@ function updateAnalysisGroupDisplay() {
 	});
 	if (analysisGroupContainer.innerHTML == "") {
 		cloneAndInsertNodeTemplate(emptyAnalysisInfo, analysisGroupContainer)
+		analysisGroupContainer.style.gridTemplateColumns = ``;
 	}
 	for (const [key, value] of analysisGroupExpData.entries()) {
 		console.log("KEY", key, "VALUE", value)
@@ -238,6 +267,38 @@ function prepareSimContainers() {
 			startSimBtn.addEventListener("click", () => {
 				console.log('got event, requesting start...');
 				startSim(simId);
+			});
+
+		}
+
+
+		const renameSimBtn = x.getElementsByClassName('rename-sim-btn')[0];
+		const nameContainer = renameSimBtn.closest('.sim-name');
+		const simNameTextContainer = nameContainer.querySelector('p');
+		const simNameInputContainer = nameContainer.querySelector('input');
+		if (renameSimBtn != null && simNameInputContainer != null && simNameTextContainer != null) {
+			renameSimBtn.addEventListener("click", (event) => {
+				console.log('got event, renaming the sim...');
+				simNameTextContainer.classList.add('hidden');
+				simNameInputContainer.classList.remove('hidden');
+				simNameInputContainer.value = simNameTextContainer.innerText;
+				simNameInputContainer.focus();
+
+			});
+
+
+			simNameInputContainer.addEventListener("blur", function(event) {
+				simNameTextContainer.classList.remove('hidden');
+				simNameInputContainer.classList.add('hidden');
+			});
+
+
+			simNameInputContainer.addEventListener("keydown", function(event) {
+				if (event.key === "Enter") {
+					simNameTextContainer.classList.remove('hidden');
+					simNameInputContainer.classList.add('hidden');
+					renameSim(simId, event.target.value)
+				}
 			});
 
 		}

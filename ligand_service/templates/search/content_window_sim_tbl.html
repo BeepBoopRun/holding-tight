@@ -1,0 +1,21 @@
+{% extends "search/content_window.html" %}
+{% block content %}
+<table class="rounded-lg my-2 border-separate">
+    <tr class="bg-gray-300 rounded-lg">
+	{% for colname in group.exp_data.columns %}
+	<th class="border p-2 first:rounded-tl-lg last:rounded-tr-lg">{{ colname }}</th>
+	{% endfor %}
+    </tr>
+    {% for row in group.exp_data.data %}
+    <tr class="row bg-gray-200">
+	{% for value in row %}
+	{% if forloop.counter == 2 %}
+	<td class="[.row:last-child_&:last-child]:rounded-br-lg [.row:last-child_&:first-child]:rounded-bl-lg p-2 border"><a href="/show/{{ value }}" class="text-blue-500 underline underline-offset-1"> {{ value }} </a></td>
+	{% else %}
+	<td class="[.row:last-child_&:last-child]:rounded-br-lg [.row:last-child_&:first-child]:rounded-bl-lg p-2 border">{{ value }}</td>
+	{% endif %}
+	{% endfor %}
+    </tr>
+    {% endfor %}
+</table> 
+{% endblock %}

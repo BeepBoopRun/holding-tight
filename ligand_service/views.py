@@ -39,6 +39,15 @@ def start_sim_task(sim: Simulation, session_key: str):
         sim.save()
 
 
+def rename_sim(request):
+    body = json.loads(request.body)
+    session_key = request.session.session_key
+    sim = Simulation.objects.get(user_key=session_key, sim_id=body["sim_id"])
+    sim.dirname = body["sim_name"]
+    sim.save()
+    return HttpResponse()
+
+
 def start_sim(request):
     body = json.loads(request.body)
     print(body, flush=True)

@@ -1,30 +1,11 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block content %}
-
-<script>
-    function showContent(event) {
-	const parent = event.target.closest('.content-window');
-	const elem = parent.querySelector('.show-indicator');
-	const infoElement = parent.querySelector('.info');
-	infoElement.classList.toggle("hidden");
-	elem.classList.toggle('rotate-270')
-    }
-    function downloadFile(event) {
-	jobID = window.location.href.split("/").at(-1);
-	filename = `interactions.csv`;
-	request_url = `/download/${jobID}/${filename}`;
-	const link = document.createElement("a");
-	link.href = request_url;
-	link.download = `coral_interactions.csv`;
-	link.click();
-    }
-</script>
-
 <div id="details" class="text-lg">
     <div class="flex-col items-center justify-center content-center">
 	<div>
-	    <div onclick="downloadFile(event, {{ run.id }})" class="bg-gray-300 hover:bg-gray-400/60 cursor-pointer flex w-fit items-center rounded-lg border gap-2 ml-2 p-2">
+	    <div onclick='downloadFile("interactions.csv")' class="bg-gray-300 hover:bg-gray-400/60 cursor-pointer flex w-fit items-center rounded-lg border gap-2 ml-2 p-2">
 		<svg title="Download data" class="size-8 rounded-lg cursor-pointer " xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" >
 		    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
 		</svg>
@@ -40,5 +21,8 @@
 	</div>
     </div>
 </div>
+{% endblock %}
 
+{% block js_scripts %}
+<script src="{% static 'ligand_service/results.js' %}"> </script>
 {% endblock %}

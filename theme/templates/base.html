@@ -16,15 +16,6 @@
     <body class="text-black font-mono w-screen min-h-screen overflow-x-hidden">
 	<!-- Firefox Flash Of Unstyled Content Fix -->
 	<script>0</script>
-	<script>
-	    function downloadLogs(event, logfile) {
-		request_url = `/download/${logfile}`;
-		const link = document.createElement("a");
-		link.href = request_url;
-		link.download = logfile;
-		link.click();
-	    }
-	</script>
 	<nav id="topnav" class="top-0 z-30 border-b 2xl:px-32 py-2 w-screen opacity-85 bg-navy-800">
 	    <ul class="flex font-medium items-center">
 		<li class="">

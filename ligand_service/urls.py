@@ -25,6 +25,7 @@ urlpatterns = [
     path("dashboard/api/sim/upload", views.upload_sim),
     path("dashboard/api/sim/delete", views.delete_sim),
     path("dashboard/api/sim/start", views.start_sim),
+    path("dashboard/api/sim/rename", views.rename_sim),
     path("dashboard/api/sims-data", views.send_sims_data),
     path("dashboard/api/group/start", views.run_group_analysis),
     path("dashboard/api/group/delete", views.delete_group_analysis),
