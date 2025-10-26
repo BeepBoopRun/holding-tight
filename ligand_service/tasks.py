@@ -527,6 +527,8 @@ def plot_contact_fraction_heatmap(
             )
         )
 
+    fig.update_xaxes(tickangle=45)
+
     fig.update_layout(
         updatemenus=[
             dict(
@@ -546,7 +548,6 @@ def plot_contact_fraction_heatmap(
         full_html=False,
         config={"displaylogo": False, "responsive": True},
     )
-
     return fig_html
 
 

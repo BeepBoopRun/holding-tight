@@ -86,14 +86,6 @@
 	{% include "submit/history.html" with history=history %}
     </div>
 </div>
-
-
-<button class="text-xl border rounded-lg p-2 bg-red-400 hover:bg-red-200 hover:cursor-pointer" onclick="downloadLogs(event, 'webserver.log')">
-    Download webserver logs
-</button>
-<button class="text-xl border rounded-lg p-2 bg-red-400 hover:bg-red-200 mt-1 hover:cursor-pointer" onclick="downloadLogs(event, 'huey.log')">
-    Download huey logs
-</button>
 {% endblock %}
 
 {% block js_scripts %}

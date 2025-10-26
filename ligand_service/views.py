@@ -141,11 +141,7 @@ def send_sims_data(request):
 def send_analyses_history(request):
     sims_data = render_to_string(
         "submit/history.html",
-        {
-            "history": reversed(
-                GroupAnalysis.objects.filter(user_key=request.session.session_key)
-            )
-        },
+        {"history": GroupAnalysis.objects.filter(user_key=request.session.session_key)},
     )
     headers = {
         "Content-Type": "text/html; charset=utf-8",
@@ -233,8 +229,8 @@ def dashboard(request):
             "user_dirs": Simulation.objects.filter(
                 user_key=request.session.session_key, was_deleted=False
             ),
-            "history": reversed(
-                GroupAnalysis.objects.filter(user_key=request.session.session_key)
+            "history": GroupAnalysis.objects.filter(
+                user_key=request.session.session_key
             ),
         },
     )

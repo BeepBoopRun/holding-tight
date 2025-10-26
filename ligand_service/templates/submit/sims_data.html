@@ -1,7 +1,7 @@
 {% load widget_tweaks %}
 
 
-{% for dir in user_dirs %}
+{% for dir in user_dirs reversed %}
 <div class="sim-data border rounded-lg overflow-x-scroll flex flex-nowrap h-18 items-stretch mt-2" data-sim-id={{ dir.sim_id }}>
     <p class="sim-name text-lg bg-gray-300 p-5 border-r self-center w-[35%] h-full overflow-x-scroll text-nowrap">{{ dir }}</p>
     <p class="ml-4 self-center">Status: 
