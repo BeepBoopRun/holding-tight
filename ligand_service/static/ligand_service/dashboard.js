@@ -75,6 +75,7 @@ async function renameSim(simId, simName) {
 		method: "POST",
 		body: JSON.stringify({ "sim_id": simId, "sim_name": simName }),
 	});
+	clearQueueAnalysis();
 	await updateSimsData();
 	await updateHistoryData();
 }
@@ -159,11 +160,22 @@ function updateAnalysisGroupDisplay() {
 	analysisGroup.forEach((element, index) => {
 		const removeBtn = cloneAndInsertNodeTemplate(removeBtnTemplate, analysisGroupContainer)
 		removeBtn.addEventListener('click', (event) => {
-			const btnIndex = Array.from(analysisGroupContainer.children).indexOf(removeBtn);
-			for (let i = 0; i < 2 + experimentalValsCount; i++) {
-				const node = analysisGroupContainer.childNodes[btnIndex];
-				if (node) analysisGroupContainer.removeChild(node);
+			for (let i = index + 1; i < analysisGroup.length; i++) {
+				const currentVal = analysisGroupExpData.get(`0,${i}`);
+				if (currentVal != null) {
+					console.log("setting", currentVal, "into", `0,${i - 1}`)
+					analysisGroupExpData.set(`0,${i - 1}`, currentVal);
+
+				}
 			}
+			// delete last element after moving one to the left
+			analysisGroupExpData.delete(`0,${analysisGroup.length - 1}`);
+			analysisGroup.splice(index, 1);
+			if (analysisGroup.length == 0) {
+				clearQueueAnalysis();
+				return;
+			}
+			updateAnalysisGroupDisplay();
 		});
 		const infoNode = analysisInfoTemplate.cloneNode();
 		infoNode.classList.remove("hidden");
@@ -308,10 +320,12 @@ function prepareSimContainers() {
 			addToAnalysisBtn.addEventListener("click", () => {
 				const seeResultNode = addToAnalysisBtn.parentNode.querySelector("a");
 				const simResultId = seeResultNode.href.split("/").at(-1);
+				console.log(seeResultNode, simResultId);
 				for (const simInfo of analysisGroup) {
-					if (simInfo.simId == simId) {
-						console.log("Already on the list, skipping...")
-						return
+					console.log("COMPARISON:", simInfo.simIsimResultId);
+					if (simInfo.simId == simResultId) {
+						console.log("Already on the list, skipping...");
+						return;
 					}
 				}
 				analysisGroup.push({ "simName": simName, "simId": simResultId });
