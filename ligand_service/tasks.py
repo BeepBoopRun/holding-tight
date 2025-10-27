@@ -167,6 +167,7 @@ def create_getcontacts_table(get_contacts_df: pd.DataFrame) -> str:
     fig.update_traces(columnwidth=[100, 300])
     fig.update_layout(COMMON_LAYOUT_TABLE)
     table = fig.to_html(
+        include_plotlyjs=False,
         full_html=False,
         config={"displaylogo": False, "responsive": True},
     )
@@ -193,6 +194,7 @@ def create_interaction_area_graph(contacts_df: pd.DataFrame) -> str:
     fig.update_layout(COMMON_LAYOUT)
     graph = fig.to_html(
         full_html=False,
+        include_plotlyjs=False,
         config={"displaylogo": False, "responsive": True},
     )
     return graph
@@ -319,6 +321,7 @@ def create_time_resolved_map(contacts_df: pd.DataFrame) -> str:
     fig.update_yaxes(showgrid=False)
 
     graph = fig.to_html(
+        include_plotlyjs=False,
         full_html=False,
         config={"displaylogo": False, "responsive": True},
     )
@@ -545,6 +548,7 @@ def plot_contact_fraction_heatmap(
     )
 
     fig_html = fig.to_html(
+        include_plotlyjs=False,
         full_html=False,
         config={"displaylogo": False, "responsive": True},
     )

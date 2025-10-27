@@ -1,7 +1,19 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block extra_headers %}
+<script src="{% static 'plotly.js' %}"> </script>
+{% endblock %}
+
 {% block content %}
+<div id="modal-bg"
+     class="fixed inset-0 flex items-center justify-center bg-gray-300 bg-opacity-50 hidden z-50"
+     onclick="bgClicked(event)">
+  <div id="modal"
+       class="bg-gray-300 border rounded-lg p-4 h-[80%] w-[80%]"
+       onclick="modalClicked(event)">
+  </div>
+</div>
 <div id="details" class="text-lg">
     <div class="flex-col items-center justify-center content-center">
 	<div>

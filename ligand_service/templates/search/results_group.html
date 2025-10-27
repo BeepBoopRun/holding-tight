@@ -1,6 +1,10 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block extra_headers %}
+<script src="{% static 'plotly.js' %}"> </script>
+{% endblock %}
+
 {% block content %}
 <div id="details" class="text-lg">
     <div class="flex-col items-center justify-center content-center">
