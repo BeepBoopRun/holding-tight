@@ -1,25 +1,21 @@
-{% extends 'base.html' %}
+{% extends 'search/results.html' %}
 {% load static %}
 
 {% block extra_headers %}
 <script src="{% static 'plotly.js' %}"> </script>
 {% endblock %}
 
-{% block content %}
-<div id="details" class="text-lg">
-    <div class="flex-col items-center justify-center content-center">
-	<div>
-	    <div onclick='downloadFile("group.csv")' class="bg-gray-300 hover:bg-gray-400/60 cursor-pointer flex w-fit items-center rounded-lg border gap-2 p-2">
-		<svg title="Download data" class="size-8 rounded-lg cursor-pointer " xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" >
-		    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-		</svg>
-		    Download group data
-	    </div>
-	    {% include "search/content_window_sim_tbl.html" with title="Included simulations" group=group %}
-	    {% include "search/content_window.html" with title="Interactions by frequency and type" graph=group.interaction_freq_map %}
-	</div>
-    </div>
-</div>
+{% block filename %}
+"group.csv"
+{% endblock %}
+
+{% block download_desc %}
+Download group data
+{% endblock %}
+
+{% block content_windows %}
+{% include "search/content_window_sim_tbl.html" with title="Included simulations" group=group %}
+{% include "search/content_window.html" with title="Interactions by frequency and type" graph=group.interaction_freq_map %}
 {% endblock %}
 
 {% block js_scripts %}

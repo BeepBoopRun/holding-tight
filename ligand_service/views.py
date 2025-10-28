@@ -269,7 +269,7 @@ def show(request, sim_id):
         run_data = json.load(f)
     return render(
         request,
-        "search/results.html",
+        "search/results_single.html",
         {
             "run": run_data,
         },
