@@ -1,11 +1,15 @@
 {% extends "search/content_window.html" %}
 {% block content %}
-{% for chain, data in alignment_scores.items %}
-<div class="pt-1">
-    <strong>Chain {{ chain }}:</strong><br>
-    <p class="ml-2">Detected entry: <a href="https://www.uniprot.org/uniprotkb/{{ data.1 }}/entry" class="text-blue-700 underline-offset-2 underline">{{ data.0 }}</a></p>
-    <p class="ml-2">E-value: {{ data.2 }}</p>
-    <br>
-</div>
-{% endfor %}
+    {% for chain, data in alignment_scores.items %}
+        <div class="pt-1">
+            <strong>Chain {{ chain }}:</strong>
+            <br>
+            <p class="ml-2">
+                Detected entry: <a href="https://www.uniprot.org/uniprotkb/{{ data.1 }}/entry"
+    class="text-blue-700 underline-offset-2 underline">{{ data.0 }}</a>
+            </p>
+            <p class="ml-2">E-value: {{ data.2 }}</p>
+            <br>
+        </div>
+    {% endfor %}
 {% endblock %}

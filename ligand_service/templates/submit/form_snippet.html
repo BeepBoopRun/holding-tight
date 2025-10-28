@@ -1,17 +1,24 @@
 {% load widget_tweaks %}
-
 <div class="entry border rounded-lg mb-1 inline-flex flex-nowrap min-w-0 max-w-full">
     {{ form.non_errors }}
     {% render_field form.name class="p-2 m-2 bg-gray-300 border rounded-lg" placeholder="Run name (optional)" %}
     {% render_field form.value class="val hidden p-2 m-2 bg-gray-300 border rounded-lg max-w-38" placeholder="Enter value" %}
     {% render_field form.choice class="file-label-input p-2 m-2 bg-gray-300 border rounded-lg cursor-pointer" onchange="handleChangedFileType()" %}
-    <label class="file-label p-2 m-2 bg-gray-300 border rounded-lg cursor-pointer overflow-x-auto whitespace-nowrap flex-shrink min-w-55">Upload files...
-	{% render_field form.file class="file-input hidden" onchange="handleNewFiles()" %}
+    <label class="file-label p-2 m-2 bg-gray-300 border rounded-lg cursor-pointer overflow-x-auto whitespace-nowrap flex-shrink min-w-55">
+        Upload files...
+        {% render_field form.file class="file-input hidden" onchange="handleNewFiles()" %}
     </label>
     {% render_field form.paths class+="file-paths hidden" %}
-    <button type="button" onclick="deleteThisFileForm()" class="cursor-pointer py-1 px-2 m-2 border rounded-lg bg-red-300 hover:bg-red-400">
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-	    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-	</svg>
+    <button type="button"
+            onclick="deleteThisFileForm()"
+            class="cursor-pointer py-1 px-2 m-2 border rounded-lg bg-red-300 hover:bg-red-400">
+        <svg xmlns="http://www.w3.org/2000/svg"
+             fill="none"
+             viewBox="0 0 24 24"
+             stroke-width="1.5"
+             stroke="currentColor"
+             class="size-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
     </button>
-</div> 
+</div>

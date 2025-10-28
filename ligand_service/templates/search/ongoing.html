@@ -1,32 +1,18 @@
 {% extends 'base.html' %}
-
 {% load static %}
 {% block extra_headers %}
-<script src="{% static 'ligand_service/refresh.js' %}"> </script>
+    <script src="{% static 'ligand_service/refresh.js' %}"> </script>
 {% endblock %}
-
-
 {% block content %}
-
-<h4 class="mt-4 text-xl">
-    Job ID: {{ job_id }}
-</h4>
-<p id="status-info" class="text-2xl mt-4">
-Status: Ongoing...
-</p>
-<p id="refresh-status" class="invisible text-xl">
-Placeholder
-</p>
-
-{% for task in tasks %}
-<p>{{ task.get_task_type_display }} - {{ task.get_status_display }}</p>
-{% for info in task.get_task_progress_info %}
-{% for subtask_name, progress in info.items %}
-<p class="ml-2">{{ subtask_name }} - {{ progress }}</p>
-{% endfor %}
-{% endfor %}
-{% empty %}
-<p>No tasks found.</p>
-{% endfor %}
-
+    <h4 class="mt-4 text-xl">Job ID: {{ job_id }}</h4>
+    <p id="status-info" class="text-2xl mt-4">Status: Ongoing...</p>
+    <p id="refresh-status" class="invisible text-xl">Placeholder</p>
+    {% for task in tasks %}
+        <p>{{ task.get_task_type_display }} - {{ task.get_status_display }}</p>
+        {% for info in task.get_task_progress_info %}
+            {% for subtask_name, progress in info.items %}<p class="ml-2">{{ subtask_name }} - {{ progress }}</p>{% endfor %}
+        {% endfor %}
+    {% empty %}
+        <p>No tasks found.</p>
+    {% endfor %}
 {% endblock %}

@@ -2,6 +2,7 @@
 
 const modalBackground = document.getElementById("modal-bg");
 const modalView = document.getElementById("modal");
+const modalGraphPlaceholder = document.getElementById("modal-graph");
 
 let plotlyGraphBorrowed = null;
 let plotlyGraphBorrowedLayout = null;
@@ -34,7 +35,7 @@ async function showPrintView(event) {
 	plotlyGraphBorrowedLayout = [width, height];
 	modalView.classList.add("invisible");
 	modalBackground.classList.remove("hidden");
-	modalView.appendChild(graphToBorrow);
+	modalGraphPlaceholder.appendChild(graphToBorrow);
 	await Plotly.Plots.resize(graphToBorrow);
 	modalView.classList.remove("invisible");
 	modalBackground.classList.remove("invisible");
@@ -65,4 +66,40 @@ function modalClicked(event) {
 
 function handlePrintViewResize(event) {
 	console.log("Resize request!");
+}
+
+const filenameInput = document.getElementById("graph-filename");
+const filetypeInput = document.getElementById("graph-filetype");
+
+function makeGraphTransparent() {
+	const layout = {
+		paper_bgcolor: 'rgba(0,0,0,0)',
+		plot_bgcolor: 'rgba(0,0,0,0)',
+	};
+	console.log(plotlyGraphBorrowed.layout);
+	console.log(plotlyGraphBorrowed.layout.paper_bgcolor);
+	console.log(plotlyGraphBorrowed.layout.plot_bgcolor);
+	Plotly.relayout(plotlyGraphBorrowed, layout);
+}
+
+function downloadGraph() {
+	console.log(filenameInput.value);
+	console.log(filetypeInput.value);
+	Plotly.downloadImage(plotlyGraphBorrowed, {
+		format: filetypeInput.value,
+		filename: filenameInput.value,
+	});
+}
+
+
+const widthInput = document.getElementById("graph-width");
+const heightInput = document.getElementById("graph-height");
+
+function changePlotWidth() {
+	Plotly.relayout(plotlyGraphBorrowed, { width: widthInput.value })
+}
+
+
+function changePlotHeight() {
+	Plotly.relayout(plotlyGraphBorrowed, { height: heightInput.value })
 }

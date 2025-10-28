@@ -1,20 +1,22 @@
 <div class="content-window">
-    <div class="flex text-xl border rounded-lg p-2 bg-indigo-100 has-[span:hover]:bg-indigo-100  hover:bg-indigo-200 cursor-pointer mt-1 w-full text-left items-center" onclick="showContent(event)" >
-	<svg class="show-indicator size-8 hover:bg-indigo-200 rounded-lg " xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-	    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-	</svg>
-	<p class="ml-2">
-	{{ title|safe }}
-	</p>
-	{% if graph %}
-	<span class="ml-auto bg-gray-300 rounded-lg border p-1 px-2 cursor-pointer hover:bg-gray-400/60" onclick="showPrintView(event)">
-	   Print View
-	</span>
-	{% endif %}
+    <div class="flex text-xl border rounded-lg p-2 bg-indigo-100 has-[span:hover]:bg-indigo-100  hover:bg-indigo-200 cursor-pointer mt-1 w-full text-left items-center"
+         onclick="showContent(event)">
+        <svg class="show-indicator size-8 hover:bg-indigo-200 rounded-lg "
+             xmlns="http://www.w3.org/2000/svg"
+             fill="none"
+             viewBox="0 0 24 24"
+             stroke-width="1.5"
+             stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+        </svg>
+        <p class="ml-2">{{ title|safe }}</p>
+        {% if graph %}
+            <span class="ml-auto bg-gray-300 rounded-lg border p-1 px-2 cursor-pointer hover:bg-gray-400/60"
+                  onclick="showPrintView(event)">Print View</span>
+        {% endif %}
     </div>
     <div class="info p-2 text-lg border-x border-b border-dotted rounded-lg">
-	{{ graph|safe }}
-	{% block content %}
-	{% endblock %}
+        {{ graph|safe }}
+        {% block content %}{% endblock %}
     </div>
 </div>
