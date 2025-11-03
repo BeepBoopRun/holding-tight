@@ -23,6 +23,7 @@
 | pip  | MIT License                         | [GitHub repo](https://github.com/pypa/pip/blob/main/LICENSE.txt)    
 | redis  | MIT License                         | [GitHub repo](https://github.com/redis/redis-py/blob/master/LICENSE)    
 | resumable.js  | MIT License                         | [GitHub repo](https://github.com/23/resumable.js/blob/master/MIT-LICENSE)    
+| wait-for-it  | MIT License                         | [GitHub repo](https://github.com/vishnubob/wait-for-it/blob/master/LICENSE)    
 
 
 ## Data Licenses
