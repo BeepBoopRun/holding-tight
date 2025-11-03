@@ -12,9 +12,9 @@
 | anaconda::redis  | BSD 3-Clause License                         | [GitHub repo](https://github.com/antirez/redis/blob/unstable/REDISCONTRIBUTIONS.txt)                                                     |
 | huey  | MIT License                         | [GitHub repo](https://github.com/coleifer/huey/blob/master/LICENSE)                                                     |
 | django  | BSD 3-Clause License                         | [GitHub repo](https://github.com/django/django/blob/main/LICENSE)                                                     |
-| django-browser-reload  | MIT License License                         | [GitHub repo](https://github.com/adamchainz/django-browser-reload/blob/main/LICENSE/LICENSE)                                                     |
+| django-browser-reload  | MIT License                          | [GitHub repo](https://github.com/adamchainz/django-browser-reload/blob/main/LICENSE/LICENSE)                                                     |
 | django-stubs  | MIT License                         | [GitHub repo](https://github.com/typeddjango/django-stubs/blob/master/LICENSE.md)                                                     |
-| django-widget-tweaks  | MIT License License                         | [GitHub repo](https://github.com/jazzband/django-widget-tweaks/LICENSE)                                                     |
+| django-widget-tweaks  | MIT License                          | [GitHub repo](https://github.com/jazzband/django-widget-tweaks/LICENSE)                                                     |
 | psycopg2  | LGPL License                         | [GitHub repo](https://github.com/psycopg/psycopg2/blob/master/LICENSE)                                                     |
 | gunicorn  | MIT License                         | [GitHub repo](https://github.com/benoitc/gunicorn/blob/master/LICENSE)    
 | xmltodict  | MIT License                         | [GitHub repo](https://github.com/martinblech/xmltodict/blob/master/LICENSE)    
@@ -22,6 +22,7 @@
 | python-dotenv  | BSD 3-Clause License                         | [GitHub repo](https://github.com/theskumar/python-dotenv/blob/main/LICENSE)    
 | pip  | MIT License                         | [GitHub repo](https://github.com/pypa/pip/blob/main/LICENSE.txt)    
 | redis  | MIT License                         | [GitHub repo](https://github.com/redis/redis-py/blob/master/LICENSE)    
+| resumable.js  | MIT License                         | [GitHub repo](https://github.com/23/resumable.js/blob/master/MIT-LICENSE)    
 
 
 ## Data Licenses
