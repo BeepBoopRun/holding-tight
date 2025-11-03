@@ -22,6 +22,9 @@
 | python-dotenv  | BSD 3-Clause License                         | [GitHub repo](https://github.com/theskumar/python-dotenv/blob/main/LICENSE)    
 | pip  | MIT License                         | [GitHub repo](https://github.com/pypa/pip/blob/main/LICENSE.txt)    
 | redis  | MIT License                         | [GitHub repo](https://github.com/redis/redis-py/blob/master/LICENSE)    
+
+| Other dependencies | License name                         | Link                                                             |
+|---------------|--------------------------------------|------------------------------------------------------------------|
 | resumable.js  | MIT License                         | [GitHub repo](https://github.com/23/resumable.js/blob/master/MIT-LICENSE)    
 | wait-for-it  | MIT License                         | [GitHub repo](https://github.com/vishnubob/wait-for-it/blob/master/LICENSE)    
 
