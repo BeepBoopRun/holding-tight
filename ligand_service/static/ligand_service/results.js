@@ -3,6 +3,10 @@
 const modalBackground = document.getElementById("modal-bg");
 const modalView = document.getElementById("modal");
 const modalGraphPlaceholder = document.getElementById("modal-graph");
+const filenameInput = document.getElementById("graph-filename");
+const filetypeInput = document.getElementById("graph-filetype");
+const widthInput = document.getElementById("graph-width");
+const heightInput = document.getElementById("graph-height");
 
 let plotlyGraphBorrowed = null;
 let plotlyGraphBorrowedLayout = null;
@@ -37,6 +41,14 @@ async function showPrintView(event) {
 	modalBackground.classList.remove("hidden");
 	modalGraphPlaceholder.appendChild(graphToBorrow);
 	await Plotly.Plots.resize(graphToBorrow);
+	let width_resized = graphToBorrow._fullLayout.width;
+	let height_resized = graphToBorrow._fullLayout.height;
+	widthInput.value = width_resized;
+	heightInput.value = height_resized;
+	const prohibit_resize = {
+		autosize: false
+	};
+	await Plotly.relayout(plotlyGraphBorrowed, prohibit_resize);
 	modalView.classList.remove("invisible");
 	modalBackground.classList.remove("invisible");
 
@@ -68,8 +80,6 @@ function handlePrintViewResize(event) {
 	console.log("Resize request!");
 }
 
-const filenameInput = document.getElementById("graph-filename");
-const filetypeInput = document.getElementById("graph-filetype");
 
 function makeGraphTransparent() {
 	const layout = {
@@ -87,19 +97,33 @@ function downloadGraph() {
 	console.log(filetypeInput.value);
 	Plotly.downloadImage(plotlyGraphBorrowed, {
 		format: filetypeInput.value,
-		filename: filenameInput.value,
+		filename: filenameInput.value != "" ? filenameInput.value : "coral_graph",
 	});
 }
 
-
-const widthInput = document.getElementById("graph-width");
-const heightInput = document.getElementById("graph-height");
-
 function changePlotWidth() {
-	Plotly.relayout(plotlyGraphBorrowed, { width: widthInput.value })
+	Plotly.relayout(plotlyGraphBorrowed, { width: Math.round(widthInput.value) })
 }
-
 
 function changePlotHeight() {
-	Plotly.relayout(plotlyGraphBorrowed, { height: heightInput.value })
+	Plotly.relayout(plotlyGraphBorrowed, { height: Math.round(heightInput.value) })
 }
+
+async function resizeGraph() {
+	const allow_resize = {
+		autosize: true
+	};
+	await Plotly.relayout(plotlyGraphBorrowed, allow_resize);
+	let width_resized = plotlyGraphBorrowed._fullLayout.width;
+	let height_resized = plotlyGraphBorrowed._fullLayout.height;
+	widthInput.value = width_resized;
+	heightInput.value = height_resized;
+
+	const set_layout = {
+		width: width_resized,
+		height: height_resized,
+		autosize: false,
+	};
+	await Plotly.relayout(plotlyGraphBorrowed, set_layout);
+}
+

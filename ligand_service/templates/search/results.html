@@ -53,12 +53,11 @@
                         px
                     </label>
                 </div>
-                <div class="flex items-center gap-2">
-                    <label class="flex items-center gap-2 cursor-pointer bg-gray-400/60 rounded p-1 border">
-                        Transparent background
-                        <input type="checkbox" onchange="makeGraphTransparent()">
-                    </label>
-                </div>
+                <button id="resize-button"
+                        class="flex items-center gap-1 bg-gray-300 hover:bg-gray-400 text-black rounded-lg border px-3 py-1 cursor-pointer"
+                        onclick="resizeGraph()">
+                   Reset size 
+                </button>
                 <button id="download-button"
                         class="flex items-center gap-1 bg-gray-300 hover:bg-gray-400 text-black rounded-lg border px-3 py-1 cursor-pointer"
                         onclick="downloadGraph()">
@@ -74,7 +73,7 @@
                     Download
                 </button>
             </div>
-            <div id="modal-graph" class="bg-gray-300 border rounded-lg p-4 h-full w-full"
+            <div id="modal-graph" class="bg-gray-300 border overflow-scroll rounded-lg p-4 h-full w-full"
             </div></div>
     </div>
 </div>

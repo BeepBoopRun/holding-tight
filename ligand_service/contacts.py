@@ -367,6 +367,7 @@ WATER_SYNONYMS = [
     "TIP2",
     "TIP3",
     "TIP4",
+    "SPC",
 ]
 WATER_SELECTION = "("
 for syn in WATER_SYNONYMS:
