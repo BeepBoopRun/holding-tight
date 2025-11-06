@@ -42,7 +42,16 @@ LIGAND_DETECTION_THRESHOLD = 0.7
 INCHIKEY_TO_NAME_JSON_PATH = Path("./chebi/inchikey_to_name.json")
 INCHIKEY_TO_CHEBIID_JSON_PATH = Path("./chebi/inchikey_to_chebiID.json")
 
-INTERACTION_TYPE_RENAME = {}
+INTERACTION_TYPE_RENAME = {
+    "hydrophobic_interactions": "Hydrophobic",
+    "hydrogen_bonds": "Hydrogen bond",
+    "water_bridges": "Water bridge",
+    "salt_bridges": "Salt bridge",
+    "pi_stacks": "Pi-pi stacking",
+    "pi_cation_interactions": "Pi-cation",
+    "halogen_bonds": "Halogen bond",
+    "metal_complexes": "Metal complex",
+}
 
 
 def save_file(file_handle, path_to_save_location: Path):
@@ -55,14 +64,14 @@ def extract_data_from_plip_results(
     results_dir: Path,
 ) -> tuple[pd.DataFrame, pd.DataFrame] | None:
     frames_data = {
-        "frame": [],
-        "interaction_type": [],
-        "residue_chain": [],
-        "residue_name": [],
-        "residue_number": [],
-        "lig_residue_chain": [],
-        "lig_residue_name": [],
-        "lig_residue_number": [],
+        "Frame": [],
+        "Interaction type": [],
+        "Residue chain": [],
+        "Residue name": [],
+        "Residue number": [],
+        "Ligand residue chain": [],
+        "Ligand residue name": [],
+        "Ligand residue number": [],
     }
     ligand_info = {
         "frames_seen": [],
@@ -124,16 +133,20 @@ def extract_data_from_plip_results(
                         if not isinstance(contacts, list):
                             contacts = [contacts]
                         for value in contacts:
-                            frames_data["frame"].append(int(dir.stem[5:]))
-                            frames_data["interaction_type"].append(interaction_type)
-                            frames_data["residue_chain"].append(value["reschain"])
-                            frames_data["residue_number"].append(value["resnr"])
-                            frames_data["residue_name"].append(value["restype"])
-                            frames_data["lig_residue_chain"].append(
+                            frames_data["Frame"].append(int(dir.stem[5:]))
+                            frames_data["Interaction type"].append(
+                                INTERACTION_TYPE_RENAME[interaction_type]
+                            )
+                            frames_data["Residue chain"].append(value["reschain"])
+                            frames_data["Residue number"].append(value["resnr"])
+                            frames_data["Residue name"].append(value["restype"])
+                            frames_data["Ligand residue chain"].append(
                                 value["reschain_lig"]
                             )
-                            frames_data["lig_residue_name"].append(value["resnr_lig"])
-                            frames_data["lig_residue_number"].append(
+                            frames_data["Ligand residue number"].append(
+                                value["resnr_lig"]
+                            )
+                            frames_data["Ligand residue name"].append(
                                 value["restype_lig"]
                             )
     frame_df = pd.DataFrame(frames_data)
@@ -177,18 +190,18 @@ def create_getcontacts_table(get_contacts_df: pd.DataFrame) -> str:
 def create_interaction_area_graph(contacts_df: pd.DataFrame) -> str:
     print(contacts_df.columns.values, flush=True)
     interaction_count = (
-        contacts_df.groupby(["frame", "interaction_type"])
-        .agg(Count=("residue_number", "count"))
+        contacts_df.groupby(["Frame", "Interaction type"])
+        .agg(Count=("Residue number", "count"))
         .reset_index()
     )
     print(interaction_count, flush=True)
     fig = px.area(
         interaction_count,
-        x="frame",
+        x="Frame",
         y="Count",
         title="Interaction counts",
-        line_group="interaction_type",
-        color="interaction_type",
+        line_group="Interaction type",
+        color="Interaction type",
     )
     fig.update_layout(xaxis=dict(rangeslider=dict(visible=True), type="linear"))
     fig.update_layout(COMMON_LAYOUT)
@@ -206,25 +219,26 @@ def hex2rgba(hexcol, a):
 
 def create_time_resolved_map(contacts_df: pd.DataFrame) -> str:
     sub_df = contacts_df[
-        ["frame", "residue_name", "residue_number", "interaction_type"]
+        ["Frame", "Residue name", "Residue number", "Interaction type"]
     ]
     sub_df["residue_label"] = (
-        sub_df["residue_name"].astype(str) + "_" + sub_df["residue_number"].astype(str)
+        sub_df["Residue name"].astype(str) + "-" + sub_df["Residue number"].astype(str)
     )
 
     residues = sorted(
         sub_df["residue_label"].unique(), key=lambda s: int(s.split("_")[-1])
     )
-    frames = np.arange(sub_df["frame"].min(), sub_df["frame"].max() + 1)
+    frames = np.arange(sub_df["Frame"].min(), sub_df["Frame"].max() + 1)
 
     types = [
-        "water_bridges",
-        "hydrophobic_interactions",
-        "pi_stacks",  # UWAGA: może zmienimy na pi_pi_stacking?
-        "pi_cation_interactions",
-        "hydrogen_bonds",
-        "halogen_bonds",
-        "salt_bridges",
+        "Hydrophobic",
+        "Hydrogen bond",
+        "Water bridge",
+        "Salt bridge",
+        "Pi-pi stacking",
+        "Pi-cation",
+        "Halogen bond",
+        #    "Metal complex",
     ]
 
     colors = [
@@ -238,21 +252,21 @@ def create_time_resolved_map(contacts_df: pd.DataFrame) -> str:
     ]
 
     counts = (
-        sub_df.groupby(["residue_label", "frame", "interaction_type"])
+        sub_df.groupby(["residue_label", "Frame", "Interaction type"])
         .size()
         .rename("n")
         .reset_index()
     )
     counts = counts.pivot_table(
-        index=["residue_label", "frame"],
-        columns="interaction_type",
+        index=["residue_label", "Frame"],
+        columns="Interaction type",
         values="n",
         fill_value=0,
     )
     counts = counts.reindex(columns=types, fill_value=0)
     counts = counts.reindex(
         pd.MultiIndex.from_product(
-            [residues, frames], names=["residue_label", "frame"]
+            [residues, frames], names=["residue_label", "Frame"]
         ),
         fill_value=0,
     )
@@ -264,13 +278,13 @@ def create_time_resolved_map(contacts_df: pd.DataFrame) -> str:
     hovertemplate = (
         "Residue: %{y}<br>"
         "Frame: %{x}<br>"
-        "water_bridges: %{customdata[0]}<br>"
-        "hydrophobic_interactions: %{customdata[1]}<br>"
-        "pi_stacks: %{customdata[2]}<br>"
-        "pi_cation_interactions: %{customdata[3]}<br>"
-        "hydrogen_bonds: %{customdata[4]}<br>"
-        "halogen_bonds: %{customdata[5]}<br>"
-        "salt_bridges: %{customdata[6]}<extra></extra>"
+        "Hydrophobic: %{customdata[1]}<br>"
+        "Hydrogen bond: %{customdata[4]}<br>"
+        "Water bridge: %{customdata[0]}<br>"
+        "Salt bridge: %{customdata[6]}<br>"
+        "Pi-pi stacking: %{customdata[2]}<br>"
+        "Pi-cation: %{customdata[3]}<br>"
+        "Halogen bond: %{customdata[5]}<extra></extra>"
     )
 
     for k, t in enumerate(types):
@@ -361,9 +375,9 @@ def analyse_simulation(
     def get_numbering_blast(row):
         assert dic is not None
         key = (
-            row["residue_chain"],
-            row["residue_name"],
-            str(row["residue_number"]),
+            row["Residue chain"],
+            row["Residue name"],
+            str(row["Residue name"]),
         )
         if key in dic:
             return dic[key]
@@ -429,23 +443,23 @@ def contact_fraction_matrix(
     df = group_df.copy()
 
     df["ResidueLabel"] = [
-        _reslabel(rn, rr) for rn, rr in zip(df["residue_name"], df["residue_number"])
+        _reslabel(rn, rr) for rn, rr in zip(df["Residue name"], df["Residue number"])
     ]
     total_frames = (
-        df.groupby("Simulation name")["frame"].nunique().rename("total_frames")
+        df.groupby("Simulation name")["Frame"].nunique().rename("total_frames")
     )
 
     if itype is not None:
-        df = df[df["interaction_type"] == itype]
+        df = df[df["Interaction type"] == itype]
 
-    df["frame"] = pd.to_numeric(df["frame"], errors="coerce")
-    df = df.dropna(subset=["frame", "Simulation name", "ResidueLabel"])
+    df["Frame"] = pd.to_numeric(df["Frame"], errors="coerce")
+    df = df.dropna(subset=["Frame", "Simulation name", "ResidueLabel"])
 
     pres = (
-        df[["Simulation name", "ResidueLabel", "frame"]]
+        df[["Simulation name", "ResidueLabel", "Frame"]]
         .drop_duplicates()
         .groupby(["Simulation name", "ResidueLabel"])
-        .agg(frames_with_contact=("frame", "nunique"))
+        .agg(frames_with_contact=("Frame", "nunique"))
         .reset_index()
     )
 
@@ -469,7 +483,7 @@ def plot_contact_fraction_heatmap(
 ):
     # ALTERNATYWNIE colorscale "magma_r"??????
 
-    types = [t for t in pd.unique(group_df["interaction_type"]) if pd.notna(t)]
+    types = [t for t in pd.unique(group_df["Interaction type"]) if pd.notna(t)]
     types_sorted = sorted(types)
 
     mats = {"All types": contact_fraction_matrix(group_df, None)}
@@ -565,24 +579,24 @@ def plot_correlation_heatmap(
     sims_exp_data = df[df.columns[-3:]].drop_duplicates().reset_index(drop=True)
     sims_frame_data = df[df.columns[:-3].to_list() + [IDENTIFIER_COLUMN]]
     sims_frame_data["residue"] = (
-        sims_frame_data["residue_name"]
+        sims_frame_data["Residue name"]
         + "-"
-        + sims_frame_data["residue_number"].astype(str)
+        + sims_frame_data["Residue number"].astype(str)
     )
 
     interactions_by_sim = (
-        sims_frame_data.groupby([IDENTIFIER_COLUMN, "interaction_type"])["frame"]
+        sims_frame_data.groupby([IDENTIFIER_COLUMN, "Interaction type"])["Frame"]
         .count()
         .reset_index()
     )
     interactions_by_sim_residue = (
-        sims_frame_data.groupby([IDENTIFIER_COLUMN, "residue"])["frame"]
+        sims_frame_data.groupby([IDENTIFIER_COLUMN, "residue"])["Frame"]
         .count()
         .reset_index()
     )
     interactions_by_sim_residue_type = (
-        sims_frame_data.groupby([IDENTIFIER_COLUMN, "residue", "interaction_type"])[
-            "frame"
+        sims_frame_data.groupby([IDENTIFIER_COLUMN, "residue", "Interaction type"])[
+            "Frame"
         ]
         .count()
         .reset_index()
@@ -593,7 +607,7 @@ def plot_correlation_heatmap(
 
     correlations = {}
     wide_df = interactions_by_sim_residue.pivot_table(
-        index=["Simulation name"], columns="residue", values="frame"
+        index=["Simulation name"], columns="residue", values="Frame"
     ).reset_index()
     wide_df = wide_df.merge(sims_exp_data.iloc[:, :-1])
     corrs = wide_df.corr(numeric_only=True)[EXP_DATA_COLUMN].sort_values(
@@ -601,12 +615,12 @@ def plot_correlation_heatmap(
     )
     correlations["Overall"] = corrs
 
-    for interaction in interactions_by_sim_residue_type["interaction_type"].unique():
+    for interaction in interactions_by_sim_residue_type["Interaction type"].unique():
         wide_df = (
             interactions_by_sim_residue_type[
-                interactions_by_sim_residue_type["interaction_type"] == interaction
+                interactions_by_sim_residue_type["Interaction type"] == interaction
             ]
-            .pivot_table(index=["Simulation name"], columns="residue", values="frame")
+            .pivot_table(index=["Simulation name"], columns="residue", values="Frame")
             .reset_index()
         )
         wide_df = wide_df.merge(sims_exp_data.iloc[:, :-1])
