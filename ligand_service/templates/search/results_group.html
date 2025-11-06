@@ -8,6 +8,9 @@
 {% block content_windows %}
     {% include "search/content_window_sim_tbl.html" with title="Included simulations" group=group %}
     {% include "search/content_window.html" with title="Interactions by frequency and type" graph=group.interaction_freq_map %}
+    {% if group.interaction_correlation_map %}
+    {% include "search/content_window.html" with title="Correlation between interactions and experimental data" graph=group.interaction_correlation_map %}
+    {% endif %}
 {% endblock %}
 {% block js_scripts %}
     <script src="{% static 'ligand_service/results.js' %}"> </script>

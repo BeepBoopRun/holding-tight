@@ -555,6 +555,111 @@ def plot_contact_fraction_heatmap(
     return fig_html
 
 
+IDENTIFIER_COLUMN = "Simulation name"
+
+
+def plot_correlation_heatmap(
+    df: pd.DataFrame,
+    colorscale: str = "magma_r",
+):
+    sims_exp_data = df[df.columns[-3:]].drop_duplicates().reset_index(drop=True)
+    sims_frame_data = df[df.columns[:-3].to_list() + [IDENTIFIER_COLUMN]]
+    sims_frame_data["residue"] = (
+        sims_frame_data["residue_name"]
+        + "-"
+        + sims_frame_data["residue_number"].astype(str)
+    )
+
+    interactions_by_sim = (
+        sims_frame_data.groupby([IDENTIFIER_COLUMN, "interaction_type"])["frame"]
+        .count()
+        .reset_index()
+    )
+    interactions_by_sim_residue = (
+        sims_frame_data.groupby([IDENTIFIER_COLUMN, "residue"])["frame"]
+        .count()
+        .reset_index()
+    )
+    interactions_by_sim_residue_type = (
+        sims_frame_data.groupby([IDENTIFIER_COLUMN, "residue", "interaction_type"])[
+            "frame"
+        ]
+        .count()
+        .reset_index()
+    )
+
+    interactions_with_exp = interactions_by_sim.merge(sims_exp_data.iloc[:, :-1])
+    EXP_DATA_COLUMN = interactions_with_exp.columns.to_list()[-1]
+
+    correlations = {}
+    wide_df = interactions_by_sim_residue.pivot_table(
+        index=["Simulation name"], columns="residue", values="frame"
+    ).reset_index()
+    wide_df = wide_df.merge(sims_exp_data.iloc[:, :-1])
+    corrs = wide_df.corr(numeric_only=True)[EXP_DATA_COLUMN].sort_values(
+        ascending=False
+    )
+    correlations["Overall"] = corrs
+
+    for interaction in interactions_by_sim_residue_type["interaction_type"].unique():
+        wide_df = (
+            interactions_by_sim_residue_type[
+                interactions_by_sim_residue_type["interaction_type"] == interaction
+            ]
+            .pivot_table(index=["Simulation name"], columns="residue", values="frame")
+            .reset_index()
+        )
+        wide_df = wide_df.merge(sims_exp_data.iloc[:, :-1])
+        corrs = wide_df.corr(numeric_only=True)[EXP_DATA_COLUMN].sort_values(
+            ascending=False
+        )
+        corrs.drop(EXP_DATA_COLUMN, inplace=True)
+        correlations[interaction] = corrs
+
+    corrs_df = pd.DataFrame(correlations)
+    corrs_df.drop(EXP_DATA_COLUMN, inplace=True)
+    corrs_df.sort_index(key=lambda x: x.str.split("-").str[1].astype(int), inplace=True)
+    corrs_df.fillna("", inplace=True)
+
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=corrs_df.T.values,
+            x=corrs_df.index,
+            y=corrs_df.columns.to_list(),
+            zmin=-1,
+            zmax=1,
+            colorscale="magma_r",
+            colorbar=dict(
+                title=dict(
+                    text="Correlation",
+                    side="right",
+                ),
+                tickfont=dict(size=10),
+                xpad=10,
+            ),
+            hovertemplate="Residue: %{x}<br>Correlation: %{z}<extra></extra>",
+        )
+    )
+
+    fig.update_layout(
+        paper_bgcolor=PAGE_BG_COLOR,
+        title=f"Correlation between number of interactions and {EXP_DATA_COLUMN.lower()}",
+        xaxis_title="Residue",
+        yaxis_title="Interaction type",
+        xaxis=dict(tickangle=270),
+    )
+
+    fig.update_xaxes(tickangle=45)
+
+    fig_html = fig.to_html(
+        include_plotlyjs=False,
+        full_html=False,
+        config={"displaylogo": False, "responsive": True},
+    )
+
+    return fig_html
+
+
 def analyse_group(results_dirs: list[Path], group_result_dir: Path):
     sims_data = []
     for dir in results_dirs:
@@ -594,13 +699,7 @@ def analyse_group(results_dirs: list[Path], group_result_dir: Path):
         prepared_dfs.append(df)
 
     group_df = pd.concat(prepared_dfs)
-    print(group_df)
     group_df.to_csv(group_result_dir / "group.csv", index=False)
-    print("RESDIR:", group_result_dir, flush=True)
-
-    print("SIM NAMES: ", end="")
-    for sim_data in sims_data:
-        print(sim_data["name"])
 
     interaction_freq_map = plot_contact_fraction_heatmap(group_df)
 
@@ -608,6 +707,10 @@ def analyse_group(results_dirs: list[Path], group_result_dir: Path):
         "exp_data": exp_data.to_dict(orient="split", index=False),
         "interaction_freq_map": interaction_freq_map,
     }
+
+    if len(exp_data.columns) > 2:
+        interaction_correlation_map = plot_correlation_heatmap(group_df)
+        group_data["interaction_correlation_map"] = interaction_correlation_map
 
     print("WRITING GROUP DATA", flush=True)
     with open(group_result_dir / "group_data.json", "w") as f:
