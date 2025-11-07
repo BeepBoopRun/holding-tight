@@ -226,19 +226,19 @@ def create_time_resolved_map(contacts_df: pd.DataFrame) -> str:
     )
 
     residues = sorted(
-        sub_df["residue_label"].unique(), key=lambda s: int(s.split("_")[-1])
+        sub_df["residue_label"].unique(), key=lambda s: int(s.split("-")[-1])
     )
     frames = np.arange(sub_df["Frame"].min(), sub_df["Frame"].max() + 1)
 
     types = [
-        "Hydrophobic",
-        "Hydrogen bond",
         "Water bridge",
-        "Salt bridge",
+        "Hydrophobic",
         "Pi-pi stacking",
         "Pi-cation",
+        "Hydrogen bond",
         "Halogen bond",
-        #    "Metal complex",
+        "Salt bridge",
+        "Metal complex",
     ]
 
     colors = [
@@ -249,6 +249,7 @@ def create_time_resolved_map(contacts_df: pd.DataFrame) -> str:
         "#ffd92f",
         "#fc8d62",
         "#e78ac3",
+        "#d6bbd3",
     ]
 
     counts = (
@@ -278,13 +279,14 @@ def create_time_resolved_map(contacts_df: pd.DataFrame) -> str:
     hovertemplate = (
         "Residue: %{y}<br>"
         "Frame: %{x}<br>"
-        "Hydrophobic: %{customdata[1]}<br>"
-        "Hydrogen bond: %{customdata[4]}<br>"
         "Water bridge: %{customdata[0]}<br>"
-        "Salt bridge: %{customdata[6]}<br>"
+        "Hydrophobic: %{customdata[1]}<br>"
         "Pi-pi stacking: %{customdata[2]}<br>"
         "Pi-cation: %{customdata[3]}<br>"
-        "Halogen bond: %{customdata[5]}<extra></extra>"
+        "Hydrogen bond: %{customdata[4]}<br>"
+        "Halogen bond: %{customdata[5]}<br>"
+        "Salt bridge: %{customdata[6]}<br>"
+        "Metal complex: %{customdata[7]}<extra></extra>"
     )
 
     for k, t in enumerate(types):
