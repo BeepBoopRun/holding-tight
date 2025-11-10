@@ -37,6 +37,9 @@ services:
         - action: sync+restart
           path: ./ligand_service/tasks.py
           target: /home/mambauser/prod/ligand_service/tasks.py
+        - action: sync+restart
+          path: ./ligand_service/graphs.py
+          target: /home/mambauser/prod/ligand_service/graphs.py
     user: "57439:57439"
     volumes:
       - user_uploads:/home/mambauser/prod/user_uploads:z
