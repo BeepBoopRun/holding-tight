@@ -32,6 +32,8 @@ services:
     build: .
     command: micromamba run python manage.py run_huey
     restart: "unless-stopped"
+    deploy:
+      replicas: 6
     develop:
       watch:
         - action: sync+restart
@@ -68,8 +70,32 @@ services:
           path: ./nginx/nginx.conf
           target: /etc/nginx/conf.d/nginx.conf
 
+  prometheus:
+    image: prom/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - 9090:9090
+    restart: unless-stopped
+    volumes:
+      - ./prometheus:/etc/prometheus:zcompos
+      - prom_data:/prometheus:z
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=grafana
+      - GF_LOG_LEVEL=warn
+    volumes:
+      - ./grafana:/etc/grafana/provisioning/datasources:z
+
 
 volumes:
   postgres_data:
   user_uploads:
   static_volume:
+  prom_data:
