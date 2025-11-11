@@ -7,6 +7,7 @@ import tempfile
 import datetime
 import re
 import logging
+import shutil
 
 import requests
 from vmd import molecule, atomsel
@@ -39,7 +40,7 @@ THREE_TO_ONE = {
     "GLN": "Q",
     "GLY": "G",
     "HIS": "H",
-    "HIE": "H",  # unsure
+    "HIE": "H",
     "ILE": "I",
     "LEU": "L",
     "LYS": "K",
@@ -128,51 +129,53 @@ def get_residues_extended(uniprot_identifier: str) -> list[dict[Any, Any]] | Non
     return None
 
 
-def create_translation_dict_by_pdb(
-    numbered_pdb: Path,
-) -> dict[tuple[str, str, str], list[str]]:
-    trans_dict = {}
-    with open(numbered_pdb, "r") as f:
-        print("File open...")
-        for line in f.readlines():
-            if line[0:4] != "ATOM":
-                continue
-            atom_name = line[12:15].strip()
-            residue_name = line[17:20].strip()
-            sequence_number = line[22:26].strip()
-            chain = line[21]
-            atom_identifier = (chain, residue_name, sequence_number)
-            if atom_name == "N":
-                BW_number = line[61:66].strip()
-                if (
-                    float(BW_number) <= 0
-                    or float(BW_number) >= 8.1
-                    or float(BW_number) == 0
-                ):
-                    continue
-                if atom_identifier in trans_dict:
-                    trans_dict[atom_identifier][0] = BW_number
-                else:
-                    trans_dict[atom_identifier] = [BW_number, None]
-            if atom_name == "CA":
-                GPCRDB_number = line[61:66].strip()
-                if (
-                    float(GPCRDB_number) <= -8.1
-                    or float(GPCRDB_number) >= 8.1
-                    or float(GPCRDB_number) == 0
-                ):
-                    continue
-                if float(GPCRDB_number) > 0:
-                    GPCRDB_number = GPCRDB_number.replace(".", "x")
-                else:
-                    GPCRDB_number = str(
-                        round(abs(-float(GPCRDB_number) + 0.001), 3)
-                    ).replace(".", "x")
-                if atom_identifier in trans_dict:
-                    trans_dict[atom_identifier][1] = GPCRDB_number
-                else:
-                    trans_dict[atom_identifier] = [None, GPCRDB_number]
-    return trans_dict
+# previously used to verify blast alignment
+
+# def create_translation_dict_by_pdb(
+#     numbered_pdb: Path,
+# ) -> dict[tuple[str, str, str], list[str]]:
+#     trans_dict = {}
+#     with open(numbered_pdb, "r") as f:
+#         print("File open...")
+#         for line in f.readlines():
+#             if line[0:4] != "ATOM":
+#                 continue
+#             atom_name = line[12:15].strip()
+#             residue_name = line[17:20].strip()
+#             sequence_number = line[22:26].strip()
+#             chain = line[21]
+#             atom_identifier = (chain, residue_name, sequence_number)
+#             if atom_name == "N":
+#                 BW_number = line[61:66].strip()
+#                 if (
+#                     float(BW_number) <= 0
+#                     or float(BW_number) >= 8.1
+#                     or float(BW_number) == 0
+#                 ):
+#                     continue
+#                 if atom_identifier in trans_dict:
+#                     trans_dict[atom_identifier][0] = BW_number
+#                 else:
+#                     trans_dict[atom_identifier] = [BW_number, None]
+#             if atom_name == "CA":
+#                 GPCRDB_number = line[61:66].strip()
+#                 if (
+#                     float(GPCRDB_number) <= -8.1
+#                     or float(GPCRDB_number) >= 8.1
+#                     or float(GPCRDB_number) == 0
+#                 ):
+#                     continue
+#                 if float(GPCRDB_number) > 0:
+#                     GPCRDB_number = GPCRDB_number.replace(".", "x")
+#                 else:
+#                     GPCRDB_number = str(
+#                         round(abs(-float(GPCRDB_number) + 0.001), 3)
+#                     ).replace(".", "x")
+#                 if atom_identifier in trans_dict:
+#                     trans_dict[atom_identifier][1] = GPCRDB_number
+#                 else:
+#                     trans_dict[atom_identifier] = [None, GPCRDB_number]
+#     return trans_dict
 
 
 def blast_sequence(seq: str) -> SearchIO.HSP | None:
@@ -448,6 +451,7 @@ def get_interactions_from_trajectory(
         topology_file, trajectory_file, frames_dir, frames
     )
     get_results_plip(pdbs, plip_dir)
+    shutil.rmtree(frames_dir)
     tock = datetime.datetime.now()
     print("Done...")
     print("Running time: ", (tock - tick))

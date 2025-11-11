@@ -9,6 +9,7 @@ from huey.contrib.djhuey import HUEY as huey
 from .utils import get_user_uploads_dir, get_user_work_dir
 
 from vmd import molecule
+from django_prometheus.models import ExportModelOperationsMixin
 
 
 class TrajectoryFiles(NamedTuple):
@@ -39,11 +40,12 @@ def get_trajectory_frame_count(topology_file: Path, trajectory_file: Path) -> in
     return count
 
 
-class Simulation(models.Model):
+class Simulation(ExportModelOperationsMixin("simulation"), models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     dirname = models.CharField(max_length=128)
     user_key = models.CharField(max_length=32)
     analysis_task_id = models.UUIDField(null=True, default=None, unique=True)
+    frame_count = models.IntegerField(null=True, default=None)
     sim_id = models.UUIDField(null=True, default=uuid.uuid4, unique=True)
     # internal, used for start / delete
     results_id = models.UUIDField(null=True, default=uuid.uuid4, unique=True)
@@ -121,14 +123,14 @@ class Simulation(models.Model):
         return get_files_dir(dir)
 
 
-class GroupAnalysis(models.Model):
+class GroupAnalysis(ExportModelOperationsMixin("group_analysis"), models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     user_key = models.CharField(max_length=32)
     results_id = models.UUIDField(null=True, default=uuid.uuid4)
     sims = models.ManyToManyField(Simulation, related_name="simulations")
 
 
-class GPCRdbResidueAPI(models.Model):
+class GPCRdbResidueAPI(ExportModelOperationsMixin("GPCRdb_calls"), models.Model):
     uniprot_identifier = models.CharField(max_length=12)
     response_json = models.JSONField()
 

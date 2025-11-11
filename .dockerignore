@@ -1,6 +1,7 @@
 **/__pycache__
 huey.*
 db.*
+staticfiles/*
 
 .ruff_cache
 

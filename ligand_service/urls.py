@@ -22,6 +22,7 @@ from django.conf.urls.static import static
 from . import views
 
 urlpatterns = [
+    path("", include("django_prometheus.urls")),
     path("dashboard/api/sim/upload", views.upload_sim),
     path("dashboard/api/sim/delete", views.delete_sim),
     path("dashboard/api/sim/start", views.start_sim),

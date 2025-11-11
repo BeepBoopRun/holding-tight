@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "huey.contrib.djhuey",
     "tailwind",
     "theme",
+    "django_prometheus",
     "widget_tweaks",
     "ligand_service",
 ]
@@ -62,6 +63,7 @@ NPM_BIN_PATH = os.environ.get(
 )
 
 MIDDLEWARE = [
+    "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -69,6 +71,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django_prometheus.middleware.PrometheusAfterMiddleware",
 ]
 
 if DEBUG:

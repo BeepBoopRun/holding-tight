@@ -2,6 +2,7 @@ from pathlib import Path
 import json
 import logging
 import functools
+import shutil
 
 from huey.contrib.djhuey import task
 import pandas as pd
@@ -176,6 +177,7 @@ def analyse_simulation(
     out = extract_data_from_plip_results(plip_dir)
     if out is None:
         return
+    shutil.rmtree(plip_dir)
     df = out[0]
     ligand_df = out[1]
     dic, scores = create_translation_dict_by_blast(top_file, traj_file)
@@ -239,8 +241,6 @@ def analyse_simulation(
 def analyse_group(results_dirs: list[Path], group_result_dir: Path):
     sims_data = []
     for dir in results_dirs:
-        print("RESULT DIR:", dir)
-        print([x for x in dir.iterdir()], flush=True)
         with open(dir / "run_data.json") as f:
             raw = f.read()
             data = json.loads(raw)
@@ -248,8 +248,6 @@ def analyse_group(results_dirs: list[Path], group_result_dir: Path):
 
     interactions = []
     for dir in results_dirs:
-        print("RESULT DIR:", dir)
-        print([x for x in dir.iterdir()], flush=True)
         with open(dir / "interactions.csv") as f:
             interactions.append(
                 (
@@ -291,10 +289,8 @@ def analyse_group(results_dirs: list[Path], group_result_dir: Path):
         group_data["interaction_correlation_map"] = interaction_correlation_map
         group_data["interaction_covariance_map"] = interaction_covariance_map
 
-    print("WRITING GROUP DATA", flush=True)
     with open(group_result_dir / "group_data.json", "w") as f:
         json.dump(group_data, f)
-    print("COMPLETED WRITING GROUP DATA", flush=True)
 
     return None
 

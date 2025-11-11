@@ -16,7 +16,7 @@ from ligand_service.utils import (
     get_user_results_dir,
 )
 
-from .models import GroupAnalysis, Simulation
+from .models import GroupAnalysis, Simulation, get_trajectory_frame_count
 from . import tasks
 
 logger = logging.getLogger(__name__)
@@ -81,30 +81,29 @@ def upload_sim(request):
                 start_sim_task(sim, request.session.session_key)
             except Exception as e:
                 print(f"Db error: {e}")
-
-    elif request.method == "GET":
-        has_chunk, dir_complete = file_manager.handle_resumable_get_request(
-            request.GET,
-            get_user_uploads_dir(request.session.session_key)
-            / request.POST.get("uploadUUID", ""),
-        )
-        if dir_complete:
-            try:
-                potential_existing = Simulation.objects.filter(
-                    dirname=dir_complete.name,
-                    user_key=request.session.session_key,
-                )
-                if not potential_existing:
-                    Simulation.objects.create(
-                        dirname=dir_complete.name,
-                        user_key=request.session.session_key,
-                    ).save()
-            except Exception as e:
-                print(f"Db error: {e}")
-        if has_chunk:
-            return HttpResponse(status=200)
-        else:
-            return HttpResponse(status=204)
+    # elif request.method == "GET":
+    #     has_chunk, dir_complete = file_manager.handle_resumable_get_request(
+    #         request.GET,
+    #         get_user_uploads_dir(request.session.session_key)
+    #         / request.POST.get("uploadUUID", ""),
+    #     )
+    #     if dir_complete:
+    #         try:
+    #             potential_existing = Simulation.objects.filter(
+    #                 dirname=dir_complete.name,
+    #                 user_key=request.session.session_key,
+    #             )
+    #             if not potential_existing:
+    #                 Simulation.objects.create(
+    #                     dirname=dir_complete.name,
+    #                     user_key=request.session.session_key,
+    #                 ).save()
+    #         except Exception as e:
+    #             print(f"Db error: {e}")
+    #     if has_chunk:
+    #         return HttpResponse(status=200)
+    #     else:
+    #         return HttpResponse(status=204)
     return HttpResponse(status=200)
 
 
