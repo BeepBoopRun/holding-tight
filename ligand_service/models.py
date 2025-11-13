@@ -1,15 +1,15 @@
 from django.db import models
+from django.conf import settings
 
 import uuid
 from pathlib import Path
 from typing import NamedTuple
 
+from vmd import molecule
+from django_prometheus.models import ExportModelOperationsMixin
 from huey.contrib.djhuey import HUEY as huey
 
 from .utils import get_user_uploads_dir, get_user_work_dir
-
-from vmd import molecule
-from django_prometheus.models import ExportModelOperationsMixin
 
 
 class TrajectoryFiles(NamedTuple):
@@ -46,12 +46,24 @@ class Simulation(ExportModelOperationsMixin("simulation"), models.Model):
     user_key = models.CharField(max_length=32)
     analysis_task_id = models.UUIDField(null=True, default=None, unique=True)
     frame_count = models.IntegerField(null=True, default=None)
-    sim_id = models.UUIDField(null=True, default=uuid.uuid4, unique=True)
     # internal, used for start / delete
-    results_id = models.UUIDField(null=True, default=uuid.uuid4, unique=True)
+    sim_id = models.UUIDField(null=True, default=uuid.uuid4, unique=True)
     # shared, used to find and share results
-
+    results_id = models.UUIDField(null=True, default=uuid.uuid4, unique=True)
     was_deleted = models.BooleanField(default=False)
+
+    topology_file = models.FilePathField(
+        path=settings.BASE_DIR / "user_uploads",
+        null=True,
+        default=None,
+        max_length=1024,
+    )
+    trajectory_file = models.FilePathField(
+        path=settings.BASE_DIR / "user_uploads",
+        null=True,
+        default=None,
+        max_length=1024,
+    )
 
     def __str__(self):
         return self.dirname
@@ -92,7 +104,7 @@ class Simulation(ExportModelOperationsMixin("simulation"), models.Model):
     # NOTE: Could be remade with huey signals, didn't notice them at the start!
     def get_analysis_status(self) -> str:
         if self.is_not_queued():
-            return "Not queued"
+            return "Queueing"
         elif self.is_running():
             # TODO: Add runinfo
             files = self.get_trajectory_files()
@@ -116,11 +128,20 @@ class Simulation(ExportModelOperationsMixin("simulation"), models.Model):
 
     def get_trajectory_files(self) -> TrajectoryFiles | None:
         dir = self.get_sim_dir()
-        maestro_files = get_files_maestro(dir)
-        print("MAESTRO DIR: ", maestro_files)
-        if maestro_files is not None:
-            return maestro_files
-        return get_files_dir(dir)
+        print("Looking for trajectory files...", flush=True)
+        if self.topology_file is not None and self.trajectory_file is not None:
+            return TrajectoryFiles(
+                topology=Path(self.topology_file), trajectory=Path(self.trajectory_file)
+            )
+        files = get_files_maestro(dir)
+        if files is None:
+            files = get_files_dir(dir)
+        if files is None:
+            return None
+        self.topology_file = files.topology
+        self.trajectory_file = files.trajectory
+        self.save()
+        return files
 
 
 class GroupAnalysis(ExportModelOperationsMixin("group_analysis"), models.Model):
