@@ -72,10 +72,17 @@ def upload_sim(request):
         if dir_complete is not None:
             print("Adding new simulation file!", flush=True)
             try:
-                sim = Simulation.objects.create(
+                sim = Simulation(
                     dirname=dir_complete.name,
                     user_key=request.session.session_key,
                     sim_id=request.POST.get("uploadUUID", ""),
+                )
+                files = sim.get_trajectory_files()
+                if files is None:
+                    sim.delete()
+                    return HttpResponse(422)
+                sim.frame_count = get_trajectory_frame_count(
+                    files.topology, files.trajectory
                 )
                 sim.save()
                 start_sim_task(sim, request.session.session_key)

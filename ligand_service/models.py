@@ -108,14 +108,15 @@ class Simulation(ExportModelOperationsMixin("simulation"), models.Model):
         elif self.is_running():
             # TODO: Add runinfo
             files = self.get_trajectory_files()
-            frame_count = get_trajectory_frame_count(files.topology, files.trajectory)
+            if files is None:
+                return "Failure"
             plip_dir = get_user_work_dir(self.user_key) / str(self.sim_id) / "plip"
             if not plip_dir.is_dir():
                 return "Queued"
             frames_done = len([x for x in plip_dir.iterdir()])
             if frames_done == 0:
                 return "Queued"
-            return f"Running {frames_done} / {frame_count} frames"
+            return f"Running {frames_done} / {self.frame_count} frames"
         elif self.has_failed():
             return "Failure"
         elif self.is_finished():
@@ -128,7 +129,6 @@ class Simulation(ExportModelOperationsMixin("simulation"), models.Model):
 
     def get_trajectory_files(self) -> TrajectoryFiles | None:
         dir = self.get_sim_dir()
-        print("Looking for trajectory files...", flush=True)
         if self.topology_file is not None and self.trajectory_file is not None:
             return TrajectoryFiles(
                 topology=Path(self.topology_file), trajectory=Path(self.trajectory_file)

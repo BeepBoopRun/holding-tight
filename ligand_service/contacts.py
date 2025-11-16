@@ -307,35 +307,44 @@ def create_translation_dict_by_blast(
     return (result_dict, alignment_scores) if len(result_dict) > 0 else None
 
 
-def get_results_plip(pdbfiles: list[Path], outdir: Path | None = None):
+def get_results_plip(
+    pdbfiles: list[Path], outdir: Path | None = None, worker_count: int = 1
+):
     logger.info(f"Starting PLIP with {THREADS_FOR_PLIP} threads")
     if outdir is not None:
         prev_wd = os.getcwd()
         os.chdir(outdir)
-    process = sb.Popen(
-        [
-            "plip",
-            "-v",
-            "--maxthreads",
-            THREADS_FOR_PLIP,
-            "-x",
-            "-f",
+    processes = []
+    # could be optimized dynamically
+    for worker_idx in range(worker_count):
+        pdbfiles_part = [
+            pdbfile
+            for i, pdbfile in enumerate(pdbfiles)
+            if i % worker_count == worker_idx
         ]
-        + pdbfiles,
-        stdout=sb.PIPE,
-        stderr=sb.STDOUT,
-        text=True,
-        bufsize=1,
-    )
+        if len(pdbfiles_part) == 0:
+            continue
+        process = sb.Popen(
+            [
+                "plip",
+                "-v",
+                "-x",
+                "-f",
+            ]
+            + pdbfiles_part,
+            stdout=sb.PIPE,
+            stderr=sb.STDOUT,
+            text=True,
+            bufsize=1,
+        )
+        processes.append(process)
 
     if outdir is not None:
         os.chdir(prev_wd)
 
     assert process.stdout is not None
 
-    for line in process.stdout:
-        print("PLIP: ", line.strip())
-
+    [process.wait() for process in processes]
     process.wait()
     print("PLIP: Done!")
     return process.returncode == 0
@@ -450,8 +459,10 @@ def get_interactions_from_trajectory(
     pdbs = get_frames_from_trajectory(
         topology_file, trajectory_file, frames_dir, frames
     )
-    get_results_plip(pdbs, plip_dir)
-    shutil.rmtree(frames_dir)
+    try:
+        get_results_plip(pdbs, plip_dir, 4)
+    finally:
+        shutil.rmtree(frames_dir)
     tock = datetime.datetime.now()
     print("Done...")
     print("Running time: ", (tock - tick))
