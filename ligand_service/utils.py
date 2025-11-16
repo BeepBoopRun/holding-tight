@@ -20,10 +20,7 @@ def get_user_work_dir(session_key) -> Path:
     return settings.BASE_DIR / "user_uploads" / session_key / "work"
 
 
-# Possible bugs: (file name, size) need to be globaly unique, not perfect!
 # Front-end salt maybe?
-
-
 @dataclass
 class ResumableFile:
     relative_path: str
