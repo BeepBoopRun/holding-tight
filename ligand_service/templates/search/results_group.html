@@ -11,6 +11,9 @@
     {% if group.interaction_correlation_map %}
     {% include "search/content_window.html" with title="Correlation between interactions and experimental data" graph=group.interaction_correlation_map %}
     {% endif %}
+    {% if group.interaction_covariance_map %}
+    {% include "search/content_window.html" with title="Covariance between interactions and experimental data" graph=group.interaction_covariance_map %}
+    {% endif %}
 {% endblock %}
 {% block js_scripts %}
     <script src="{% static 'ligand_service/results.js' %}"> </script>

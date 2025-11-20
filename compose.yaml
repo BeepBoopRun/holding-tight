@@ -33,7 +33,7 @@ services:
     command: micromamba run python manage.py run_huey
     restart: "unless-stopped"
     deploy:
-      replicas: 6
+      replicas: 2
     develop:
       watch:
         - action: sync+restart
@@ -67,17 +67,7 @@ services:
           path: ./nginx/nginx.conf
           target: /etc/nginx/conf.d/nginx.conf
 
-  prometheus:
-    build: ./prometheus
-    ports:
-      - 9090:9090
-    restart: unless-stopped
-    volumes:
-      - prom_data:/prometheus:z
-
-
 volumes:
   postgres_data:
   user_uploads:
   static_volume:
-  prom_data:
