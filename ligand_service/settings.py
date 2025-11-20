@@ -26,7 +26,7 @@ load_dotenv(BASE_DIR / ".env")
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get(
     "DJANGO_SECRET_KEY",
-    "django-insecure-gd*w$dyb0lm8d(10r)p(=pe_8#n(^sw2^2-lom46ze2p8h6ec)",
+    "django-replace-this-is-unsafe10r)p(=pe_8#n(^sw2^2-lom46ze2p8h6ec)",
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -105,18 +105,29 @@ WSGI_APPLICATION = "ligand_service.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": os.environ.get("SQL_ENGINE", "django.db.backends.sqlite3"),
-        "NAME": os.environ.get("SQL_DATABASE", BASE_DIR / "db.sqlite3"),
-        "USER": os.environ.get("SQL_USER", "user"),
-        "PASSWORD": os.environ.get("SQL_PASSWORD", "password"),
-        "HOST": "localhost"
-        if not os.environ.get("RUNNING_IN_DOCKER", False)
-        else os.environ.get("SQL_HOST", "localhost"),
-        "PORT": os.environ.get("SQL_PORT", "5432"),
+
+RUNNING_IN_DOCKER = os.environ.get("RUNNING_IN_DOCKER") is not None
+
+SQL_ENGINE = os.environ.get("SQL_ENGINE", "sqlite")
+
+if RUNNING_IN_DOCKER:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get("SQL_DATABASE"),
+            "USER": os.environ.get("SQL_USER"),
+            "PASSWORD": os.environ.get("SQL_PASSWORD"),
+            "HOST": os.environ.get("SQL_HOST", "localhost"),
+            "PORT": os.environ.get("SQL_PORT", "5432"),
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": "sqlite3_db",
+        }
+    }
 
 LOGGING = (
     {
@@ -141,7 +152,7 @@ LOGGING = (
             "level": "DEBUG",
         },
     }
-    if os.environ.get("RUNNING_IN_DOCKER", False)
+    if RUNNING_IN_DOCKER
     else {}
 )
 
@@ -191,39 +202,68 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": "redis:6379/1",
+if RUNNING_IN_DOCKER:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": "redis:6379/1",
+        }
     }
-}
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        }
+    }
 
-HUEY = {
-    "huey_class": "huey.RedisHuey",  # Huey implementation to use.
-    "name": DATABASES["default"]["NAME"],
-    "results": True,  # Store return values of tasks.
-    "store_none": False,  # If a task returns None, do not save to results.
-    "immediate": False,  # If DEBUG=True, run synchronously.
-    "utc": True,  # Use UTC for all times internally.
-    "connection": {
-        "host": "redis",
-        "port": 6379,
-        "db": 0,
-        "connection_pool": None,  # Definitely you should use pooling!
-        # ... tons of other options, see redis-py for details.
-        # huey-specific connection parameters.
-        "read_timeout": 1,  # If not polling (blocking pop), use timeout.
-        "url": None,  # Allow Redis config via a DSN.
-    },
-    "consumer": {
-        "workers": 1,
-        "worker_type": "process",
-        "initial_delay": 0.1,  # Smallest polling interval, same as -d.
-        "backoff": 1.15,  # Exponential backoff using this rate, -b.
-        "max_delay": 10.0,  # Max possible polling interval, -m.
-        "scheduler_interval": 1,  # Check schedule every second, -s.
-        "periodic": True,  # Enable crontab feature.
-        "check_worker_health": True,  # Enable worker health checks.
-        "health_check_interval": 1,  # Check worker health every second.
-    },
-}
+
+if RUNNING_IN_DOCKER:
+    HUEY = {
+        "huey_class": "huey.RedisHuey",
+        "name": DATABASES["default"]["NAME"],
+        "results": True,  # Store return values of tasks.
+        "store_none": False,  # If a task returns None, do not save to results.
+        "immediate": False,  # If DEBUG=True, run synchronously.
+        "utc": True,  # Use UTC for all times internally.
+        "connection": {
+            "host": "redis",
+            "port": 6379,
+            "db": 0,
+            "connection_pool": None,  # Definitely you should use pooling!
+            # ... tons of other options, see redis-py for details.
+            # huey-specific connection parameters.
+            "read_timeout": 1,  # If not polling (blocking pop), use timeout.
+            "url": None,  # Allow Redis config via a DSN.
+        },
+        "consumer": {
+            "workers": 1,
+            "worker_type": "process",
+            "initial_delay": 0.1,  # Smallest polling interval, same as -d.
+            "backoff": 1.15,  # Exponential backoff using this rate, -b.
+            "max_delay": 10.0,  # Max possible polling interval, -m.
+            "scheduler_interval": 1,  # Check schedule every second, -s.
+            "periodic": True,  # Enable crontab feature.
+            "check_worker_health": True,  # Enable worker health checks.
+            "health_check_interval": 1,  # Check worker health every second.
+        },
+    }
+else:
+    HUEY = {
+        "huey_class": "huey.SqliteHuey",  # Huey implementation to use.
+        "name": DATABASES["default"]["NAME"],
+        "results": True,  # Store return values of tasks.
+        "store_none": False,  # If a task returns None, do not save to results.
+        "immediate": False,  # If DEBUG=True, run synchronously.
+        "utc": True,  # Use UTC for all times internally.
+        "consumer": {
+            "workers": 1,
+            "worker_type": "process",
+            "initial_delay": 0.1,  # Smallest polling interval, same as -d.
+            "backoff": 1.15,  # Exponential backoff using this rate, -b.
+            "max_delay": 10.0,  # Max possible polling interval, -m.
+            "scheduler_interval": 1,  # Check schedule every second, -s.
+            "periodic": True,  # Enable crontab feature.
+            "check_worker_health": True,  # Enable worker health checks.
+            "health_check_interval": 1,  # Check worker health every second.
+        },
+    }

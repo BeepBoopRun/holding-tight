@@ -259,15 +259,7 @@ def render_about(request):
     return render(request, "about.html")
 
 
-def example_submission(request):
-    return render(request, "example_submission.html")
-
-
 def show(request, sim_id):
-    print("GOT SIM_ID:", sim_id)
-    for sim in Simulation.objects.all():
-        print(sim.results_id)
-    print("--", flush=True)
     sim_results_dir = get_user_results_dir(sim_id)
     if not sim_results_dir.is_dir():
         return HttpResponseRedirect("/dashboard/")

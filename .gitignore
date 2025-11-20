@@ -3,6 +3,7 @@ user_uploads/*
 huey.*
 db.*
 staticfiles/*
+example_sims/*
 
 .ruff_cache
 pyrightconfig.json

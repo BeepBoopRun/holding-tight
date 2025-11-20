@@ -38,7 +38,6 @@ urlpatterns = [
     path("", views.redirect_to_dashboard),
     path("about/", views.render_about),
     path("download/<path:filepath>/", views.download_file, name="download_file"),
-    path("example-submission", views.example_submission),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 if settings.DEBUG:

@@ -428,7 +428,7 @@ def plot_correlation_covariance_heatmaps(
 
     fig_corr.update_layout(
         paper_bgcolor=PAGE_BG_COLOR,
-        title=f"Correlation between number of interactions and {EXP_DATA_COLUMN.lower()}",
+        title=f"Correlation between number of interactions and {EXP_DATA_COLUMN}",
         xaxis_title="Residue",
         yaxis_title="Interaction type",
         xaxis=dict(tickangle=270),
@@ -490,7 +490,7 @@ def plot_correlation_covariance_heatmaps(
 
     fig_cov.update_layout(
         paper_bgcolor=PAGE_BG_COLOR,
-        title=f"Covariance between number of interactions and {EXP_DATA_COLUMN.lower()}",
+        title=f"Covariance between number of interactions and {EXP_DATA_COLUMN}",
         xaxis_title="Residue",
         yaxis_title="Interaction type",
         xaxis=dict(tickangle=270),
