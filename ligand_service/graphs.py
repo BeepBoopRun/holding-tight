@@ -252,7 +252,7 @@ def contact_fraction_matrix(
 def plot_contact_fraction_heatmap(
     group_df: pd.DataFrame,
     title_prefix: str = "Contact fraction per residue",
-    colorscale: str = "puor",
+    colorscale: str = "magma_r",
 ):
     types = [t for t in pd.unique(group_df["Interaction type"]) if pd.notna(t)]
     types_sorted = sorted(types)
@@ -413,7 +413,7 @@ def plot_correlation_covariance_heatmaps(
             y=corrs_df.columns.to_list(),
             zmin=-1,
             zmax=1,
-            colorscale="magma_r",
+            colorscale="rdylbu_r",
             colorbar=dict(
                 title=dict(
                     text="Correlation",
@@ -443,8 +443,10 @@ def plot_correlation_covariance_heatmaps(
     )
 
     covariances = {}
+    print(wide_df, flush=True)
     covs = wide_df.cov(numeric_only=True)[EXP_DATA_COLUMN].sort_values(ascending=False)
     covariances["Overall"] = covs
+    print(covs, flush=True)
 
     for interaction in interactions_by_sim_residue_type["Interaction type"].unique():
         wide_df = (
@@ -473,7 +475,7 @@ def plot_correlation_covariance_heatmaps(
             y=covs_df.columns.to_list(),
             zmin=covs_df.min(numeric_only=True).min(),
             zmax=covs_df.max(numeric_only=True).max(),
-            colorscale="puor",
+            colorscale="rdylbu_r",
             colorbar=dict(
                 title=dict(
                     text="Covariance",

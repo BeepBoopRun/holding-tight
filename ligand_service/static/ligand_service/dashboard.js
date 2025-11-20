@@ -23,6 +23,9 @@ const analysisGroupExpData = new Map();
 async function updateSimsData() {
 
 	for (const simContainer of simsContainer.children) {
+		if (simContainer == null || simContainer.querySelector("input") == null) {
+			continue;
+		}
 		if (!simContainer.querySelector("input").classList.contains("hidden")) {
 			console.log("Input open, not updating...")
 			return;
