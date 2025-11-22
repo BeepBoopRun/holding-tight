@@ -36,5 +36,6 @@ ENV ENV_NAME=base
 ENV PYTHONUNBUFFERED=1
 ENV RUNNING_IN_DOCKER=True
 
+COPY --chown=$MAMBA_USER:$MAMBA_USER ./example_results ./user_uploads
 
 CMD ["micromamba", "run", "sh", "docker_entrypoint.sh"]

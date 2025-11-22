@@ -1,13 +1,16 @@
 **/__pycache__
 huey.*
 db.*
+sqlite3_db
 staticfiles/*
+example_sims/*
 
 .ruff_cache
 
 blast/*
 chebi/*
 user_uploads/*
+staticfiles/*
 theme/static_src/node_modules
 
 Dockerfile
