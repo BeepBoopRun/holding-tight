@@ -13,21 +13,32 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 
-from dotenv import load_dotenv
+
+def load_secret(path: str | None) -> str:
+    if path is None:
+        raise ValueError("Path to secret is None!")
+    with open(path, "r") as f:
+        out = f.read().strip()
+    print("SECREET!!!!1: ", out)
+    return out
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-load_dotenv(BASE_DIR / ".env")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY",
-    "django-replace-this-is-unsafe10r)p(=pe_8#n(^sw2^2-lom46ze2p8h6ec)",
-)
+
+
+RUNNING_IN_DOCKER = os.environ.get("RUNNING_IN_DOCKER") is not None
+if RUNNING_IN_DOCKER:
+    SECRET_KEY = load_secret(os.environ.get("DJANGO_SECRET_KEY_FILE"))
+else:
+    SECRET_KEY = os.environ.get(
+        "DJANGO_SECRET_KEY", "please-change-this-askjndkjanasasd"
+    )
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DJANGO_DEBUG", "") != "False"
@@ -106,8 +117,6 @@ WSGI_APPLICATION = "ligand_service.wsgi.application"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 
-RUNNING_IN_DOCKER = os.environ.get("RUNNING_IN_DOCKER") is not None
-
 SQL_ENGINE = os.environ.get("SQL_ENGINE", "sqlite")
 
 if RUNNING_IN_DOCKER:
@@ -116,7 +125,7 @@ if RUNNING_IN_DOCKER:
             "ENGINE": "django.db.backends.postgresql",
             "NAME": os.environ.get("SQL_DATABASE"),
             "USER": os.environ.get("SQL_USER"),
-            "PASSWORD": os.environ.get("SQL_PASSWORD"),
+            "PASSWORD": load_secret(os.environ.get("SQL_PASSWORD_FILE")),
             "HOST": os.environ.get("SQL_HOST", "localhost"),
             "PORT": os.environ.get("SQL_PORT", "5432"),
         }

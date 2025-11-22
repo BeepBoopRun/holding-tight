@@ -2,8 +2,14 @@ FROM mambaorg/micromamba:2.3.0
 
 USER root
 RUN apt-get update && apt-get install curl -y
+
 RUN mkdir -p /home/$MAMBA_USER/prod/user_uploads
+RUN mkdir -p /home/$MAMBA_USER/prod/staticfiles
+
 RUN chown -R $MAMBA_USER:$MAMBA_USER /home/$MAMBA_USER
+RUN chmod 755 /home/$MAMBA_USER/prod/staticfiles
+RUN chmod 755 /home/$MAMBA_USER/prod/user_uploads
+
 RUN mkdir -p /var/log/django /var/log/huey
 RUN chown -R $MAMBA_USER:$MAMBA_USER /var/log/huey
 RUN chown -R $MAMBA_USER:$MAMBA_USER /var/log/django 
@@ -38,4 +44,4 @@ ENV RUNNING_IN_DOCKER=True
 
 COPY --chown=$MAMBA_USER:$MAMBA_USER ./example_results ./user_uploads
 
-CMD ["micromamba", "run", "sh", "docker_entrypoint.sh"]
+CMD ["micromamba", "run", "sh", "./django/docker_entrypoint.sh"]

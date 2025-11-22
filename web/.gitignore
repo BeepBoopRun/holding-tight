@@ -1,0 +1,8 @@
+blast/*
+chebi/*
+user_uploads/*
+huey.*
+db.*
+sqlite3_db
+staticfiles/*
+example_sims/*

@@ -1,13 +1,4 @@
-user_uploads/*
 **/__pycache__
-huey.*
-db.*
-sqlite3_db
-staticfiles/*
-example_sims/*
+**/.ruff_cache
+**/pyrightconfig.json
 
-.ruff_cache
-pyrightconfig.json
-
-blast/*
-chebi/*

@@ -3,13 +3,13 @@ services:
     develop:
       watch: !override
         - action: sync
-          path: .
+          path: ./web/
           target: /home/mambauser/prod
     ports:
       - "8000:8000" 
     command: >
       sh -c '
-        ./wait-for-it.sh db:5432 &&
+        micromamba run python wait_on_port.py db:5432 &&
         micromamba run python manage.py migrate --no-input &&
         micromamba run python manage.py tailwind install --no-input && 
         micromamba run python manage.py tailwind dev
