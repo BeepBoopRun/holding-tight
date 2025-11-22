@@ -19,7 +19,6 @@ def load_secret(path: str | None) -> str:
         raise ValueError("Path to secret is None!")
     with open(path, "r") as f:
         out = f.read().strip()
-    print("SECREET!!!!1: ", out)
     return out
 
 

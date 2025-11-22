@@ -14,7 +14,9 @@ COPY --chown=$MAMBA_USER:$MAMBA_USER ./setup ./setup
 RUN micromamba run python /home/$MAMBA_USER/prod/setup/makeblastdb.py
 RUN micromamba run python /home/$MAMBA_USER/prod/setup/getchebi.py 
 
-COPY --chown=$MAMBA_USER:$MAMBA_USER . .
+COPY --chown=$MAMBA_USER:$MAMBA_USER ./ligand_service ./ligand_service
+COPY --chown=$MAMBA_USER:$MAMBA_USER ./theme ./theme
+COPY --chown=$MAMBA_USER:$MAMBA_USER ./manage.py .
 
 ENV ENV_NAME=base
 ENV PYTHONUNBUFFERED=1

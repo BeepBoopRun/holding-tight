@@ -9,7 +9,7 @@ services:
     develop:
       watch:
         - action: sync+restart
-          path: ./django
+          path: ./web/
           target: /home/mambauser/prod
     volumes:
       - user_uploads:/home/mambauser/prod/user_uploads:z
@@ -36,10 +36,10 @@ services:
     develop:
       watch:
         - action: sync+restart
-          path: ./ligand_service/tasks.py
+          path: ./web/ligand_service/tasks.py
           target: /home/mambauser/prod/ligand_service/tasks.py
         - action: sync+restart
-          path: ./ligand_service/graphs.py
+          path: ./web/ligand_service/graphs.py
           target: /home/mambauser/prod/ligand_service/graphs.py
     user: "57439:57439"
     environment:
@@ -70,8 +70,8 @@ services:
   redis:
       image: "redis:alpine"
       restart: "unless-stopped"
-      ports:
-        - '6379:6379'
+      expose:
+        - 6379
   
   nginx:
     build: ./nginx
