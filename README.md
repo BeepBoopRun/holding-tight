@@ -16,4 +16,4 @@ docker compose -f compose.yaml -f compose.admin.yaml up --build --watch --force-
 To see the site, go to *localhost:8000*.
 
 > [!WARNING]  
-> DJANGO_SECRET_KEY in .env should be changed when setting up prod!
+> You **NEED** to modify all the files inside the secrets directory, if the server is to be used for anything other than small testing.
