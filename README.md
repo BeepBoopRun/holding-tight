@@ -17,3 +17,6 @@ To see the site, go to *localhost:8000*.
 
 > [!WARNING]  
 > You **NEED** to modify all the files inside the secrets directory, if the server is to be used for anything other than small testing.
+
+> [!IMPORTANT]  
+> Inside the .env file, you can configure some aspect of the website, if you plan to use it long-term, you should look through them.

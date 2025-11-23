@@ -14,6 +14,7 @@ from vmd import molecule, atomsel
 from Bio import SearchIO
 
 from .models import GPCRdbResidueAPI
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -310,7 +311,6 @@ def create_translation_dict_by_blast(
 def get_results_plip(
     pdbfiles: list[Path], outdir: Path | None = None, worker_count: int = 1
 ):
-    logger.info(f"Starting PLIP with {THREADS_FOR_PLIP} threads")
     if outdir is not None:
         prev_wd = os.getcwd()
         os.chdir(outdir)
@@ -460,7 +460,7 @@ def get_interactions_from_trajectory(
         topology_file, trajectory_file, frames_dir, frames
     )
     try:
-        get_results_plip(pdbs, plip_dir, 4)
+        get_results_plip(pdbs, plip_dir, settings.MAX_THREADS_PER_WORKER)
     finally:
         shutil.rmtree(frames_dir)
     tock = datetime.datetime.now()

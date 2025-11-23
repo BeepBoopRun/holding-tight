@@ -3,10 +3,13 @@ import json
 import logging
 import functools
 import shutil
-
-from huey.contrib.djhuey import task
 import pandas as pd
 import xmltodict
+
+from huey import crontab
+from huey.contrib.djhuey import periodic_task, task
+
+from django.conf import settings
 
 from .contacts import (
     get_trajectory_frame_count,
@@ -308,3 +311,8 @@ def start_simulation(
     get_interactions_from_trajectory(top_file, traj_file, plip_dir, frames_dir, frames)
     analyse_simulation(top_file, traj_file, plip_dir, results_dir)
     return len(frames)
+
+
+@periodic_task(crontab(minute="*/1"))
+def every_three_minutes():
+    print("MINUTE PASSED!")

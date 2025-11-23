@@ -22,6 +22,11 @@ def load_secret(path: str | None) -> str:
     return out
 
 
+def load_int_from_env(env_var: str, default=None) -> int | None:
+    val = os.environ.get(env_var, default)
+    return int(val) if val is not None else None
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -244,13 +249,14 @@ if RUNNING_IN_DOCKER:
             "url": None,  # Allow Redis config via a DSN.
         },
         "consumer": {
-            "workers": 1,
+            "workers": 1 if os.environ.get("HUEY_PERIODIC_WORKER") != "True" else 0,
             "worker_type": "process",
             "initial_delay": 0.1,  # Smallest polling interval, same as -d.
             "backoff": 1.15,  # Exponential backoff using this rate, -b.
             "max_delay": 10.0,  # Max possible polling interval, -m.
             "scheduler_interval": 1,  # Check schedule every second, -s.
-            "periodic": True,  # Enable crontab feature.
+            "periodic": os.environ.get("HUEY_PERIODIC_WORKER")
+            == "True",  # Enable crontab feature.
             "check_worker_health": True,  # Enable worker health checks.
             "health_check_interval": 1,  # Check worker health every second.
         },
@@ -264,14 +270,24 @@ else:
         "immediate": False,  # If DEBUG=True, run synchronously.
         "utc": True,  # Use UTC for all times internally.
         "consumer": {
-            "workers": 1,
+            "workers": 1 if os.environ.get("HUEY_PERIODIC_WORKER") != "True" else 0,
             "worker_type": "process",
             "initial_delay": 0.1,  # Smallest polling interval, same as -d.
             "backoff": 1.15,  # Exponential backoff using this rate, -b.
             "max_delay": 10.0,  # Max possible polling interval, -m.
             "scheduler_interval": 1,  # Check schedule every second, -s.
-            "periodic": True,  # Enable crontab feature.
+            "periodic": os.environ.get("HUEY_PERIODIC_WORKER")
+            == "True",  # Enable crontab feature.
             "check_worker_health": True,  # Enable worker health checks.
             "health_check_interval": 1,  # Check worker health every second.
         },
     }
+
+MAX_THREADS_PER_WORKER = load_int_from_env("MAX_THREADS_PER_WORKER", 1)
+
+DELETE_RESULTS_AFTER_N_DAYS = load_int_from_env("DELETE_RESULTS_AFTER_N_DAYS")
+
+MAXIMUM_UPLOAD_TIME_IN_MINUTES = load_int_from_env("MAXIMUM_UPLOAD_TIME_IN_MINUTES")
+MAXIMUM_UPLOAD_SIZE_IN_MB = load_int_from_env("MAXIMUM_UPLOAD_SIZE_IN_MB")
+MAXIMUM_UPLOADS_IN_QUEUE = load_int_from_env("MAXIMUM_UPLOADS_IN_QUEUE")
+MAXIMUM_FRAMES_PER_SIMULATION = load_int_from_env("MAXIMUM_FRAMES_PER_SIMULATION")

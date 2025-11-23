@@ -41,7 +41,7 @@ async function updateSimsData() {
 	await new Promise(r => setTimeout(r, 50));
 	let response = await fetch("api/sims-data", {});
 	let newHTML = await response.text();
-	if (simsContainer.innerHTML !== newHTML) {
+	if (simsContainer.innerHTML != newHTML) {
 		simsContainer.innerHTML = newHTML;
 		prepareSimContainers();
 		return
@@ -49,7 +49,7 @@ async function updateSimsData() {
 	await new Promise(r => setTimeout(r, 50));
 	response = await fetch("api/sims-data", {});
 	newHTML = await response.text();
-	if (simsContainer.innerHTML !== newHTML) {
+	if (simsContainer.innerHTML != newHTML) {
 		simsContainer.innerHTML = newHTML;
 		prepareSimContainers();
 	}
@@ -130,7 +130,6 @@ function isNumeric(value) {
 }
 
 function updateAnalysisGroupDisplay() {
-	console.log(analysisGroup)
 	const analysisInfoTemplate = document.querySelector(".analysis-info.hidden")
 	const valueNameTemplate = document.querySelector(".value-name.hidden")
 	const valueInputTemplate = document.querySelector(".value-input.hidden")

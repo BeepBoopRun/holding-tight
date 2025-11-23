@@ -8,6 +8,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.http import FileResponse, Http404
 from django.template.loader import render_to_string
+from django.conf import settings
 
 from ligand_service.utils import (
     ResumableFilesManager,
@@ -62,6 +63,18 @@ def upload_sim(request):
         request.session.create()
     if request.POST.get("uploadUUID", "") == "":
         return HttpResponse(status=204)
+    #    total_size = request.POST.get("totalFilesizeInMB", "")
+    #    if total_size == "" or total_size is None:
+    #        return HttpResponse(status=204)
+    #    if (
+    #        settings.MAXIMUM_UPLOAD_SIZE_IN_MB is not None
+    #        and settings.MAXIMUM_UPLOAD_SIZE_IN_MB < int(total_size)
+    #    ):
+    #        return HttpResponse(status=204)
+    #    if settings.MAXIMUM_UPLOADS_IN_QUEUE is not None:
+    #        sims = Simulation.objects.filter(user_key=request.session.session_key)
+    #        pass
+    #
     if request.method == "POST":
         _, dir_complete = file_manager.handle_resumable_post_request(
             request.POST,
@@ -84,6 +97,12 @@ def upload_sim(request):
                 sim.frame_count = get_trajectory_frame_count(
                     files.topology, files.trajectory
                 )
+                if (
+                    settings.MAXIMUM_FRAMES_PER_SIMULATION is not None
+                    and settings.MAXIMUM_FRAMES_PER_SIMULATION < sim.frame_count
+                ):
+                    sim.delete()
+                    return HttpResponse(422)
                 sim.save()
                 start_sim_task(sim, request.session.session_key)
             except Exception as e:

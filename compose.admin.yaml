@@ -1,5 +1,5 @@
 services:
-  web:
+  django:
     develop:
       watch: !override
         - action: sync
