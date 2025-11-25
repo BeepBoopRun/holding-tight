@@ -21,6 +21,16 @@ from ligand_service.utils import (
 EXAMPLE_USER_UUID = "7a872fc4-2f2d-4170-a5d6-f5d8944b3f87"
 EXAMPLE_GROUP_UUID = "6eb09d37-a6bd-41b2-b69f-e7126aae0e26"
 
+DIRNAME_TO_EXP_VALUE = {
+    "Alvimopan": 2608.88,
+    "Buprenorphine": 3750.0,
+    "Nalmefene": 206.88,
+    "Naloxone": 70.56,
+    "Naltrexone": 171.42,
+    "Nmethylnaloxone": 49.98,
+    "Nmethylnaltrexone": 40.02,
+}
+
 
 class Command(BaseCommand):
     help = "Generates results from example simulations"
@@ -49,7 +59,7 @@ class Command(BaseCommand):
             )
             shutil.copytree(
                 dir,
-                get_user_uploads_dir(EXAMPLE_USER_UUID) / sim.sim_id,
+                get_user_uploads_dir(EXAMPLE_USER_UUID) / sim.sim_id / dir.name,
             )
             files = sim.get_trajectory_files()
             if files is None:
@@ -68,13 +78,16 @@ class Command(BaseCommand):
         sims = Simulation.objects.filter(user_key=EXAMPLE_USER_UUID)
 
         # start plip worker
-        worker = sb.Popen(
-            [
-                "python",
-                "manage.py",
-                "run_huey",
-            ]
-        )
+        workers = []
+        for i in range(8):
+            worker = sb.Popen(
+                [
+                    "python",
+                    "manage.py",
+                    "run_huey",
+                ]
+            )
+            workers.append(worker)
 
         toc = datetime.now()
         while True:
@@ -86,7 +99,9 @@ class Command(BaseCommand):
             if any([status == "Failed" for status in status_list]):
                 raise CommandError("Simulation analysis failed!")
             sleep(5)
-        worker.kill()
+
+        for worker in workers:
+            worker.kill()
 
         analysis = GroupAnalysis.objects.create(
             user_key=EXAMPLE_USER_UUID,
@@ -95,11 +110,12 @@ class Command(BaseCommand):
         analysis.sims.set(sims)
         group_result_id = analysis.results_id
 
+        dirnames = [sim.dirname for sim in sims]
+
         parsed_data = {
-            "Simulation name": [sim.dirname for sim in sims],
+            "Simulation name": dirnames,
             "Simulation ID": [sim.results_id for sim in sims],
-            # dirty dirty hack
-            "Residence Time": [12.3, 3.2, 17.1, 32.7, 12.4][: len(sims)],
+            "Residence Time": [DIRNAME_TO_EXP_VALUE[dirname] for dirname in dirnames],
         }
 
         results_dirs = [get_user_results_dir(sim.results_id) for sim in sims]

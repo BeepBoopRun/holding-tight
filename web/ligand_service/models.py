@@ -107,6 +107,8 @@ class Simulation(ExportModelOperationsMixin("simulation"), models.Model):
             return "Queueing"
         elif self.is_running():
             # TODO: Add runinfo
+            if self.was_deleted:
+                return "Deleted"
             files = self.get_trajectory_files()
             if files is None:
                 return "Failure"

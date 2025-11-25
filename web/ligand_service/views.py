@@ -62,19 +62,32 @@ def upload_sim(request):
     if not request.session.session_key:
         request.session.create()
     if request.POST.get("uploadUUID", "") == "":
-        return HttpResponse(status=204)
-    #    total_size = request.POST.get("totalFilesizeInMB", "")
-    #    if total_size == "" or total_size is None:
-    #        return HttpResponse(status=204)
-    #    if (
-    #        settings.MAXIMUM_UPLOAD_SIZE_IN_MB is not None
-    #        and settings.MAXIMUM_UPLOAD_SIZE_IN_MB < int(total_size)
-    #    ):
-    #        return HttpResponse(status=204)
-    #    if settings.MAXIMUM_UPLOADS_IN_QUEUE is not None:
-    #        sims = Simulation.objects.filter(user_key=request.session.session_key)
-    #        pass
-    #
+        return HttpResponse(status=400)
+    total_size = request.POST.get("totalFileSizeInMB", "")
+    if total_size == "" or total_size is None:
+        return HttpResponse(status=400)
+    if (
+        settings.MAXIMUM_UPLOAD_SIZE_IN_MB is not None
+        and settings.MAXIMUM_UPLOAD_SIZE_IN_MB < float(total_size)
+    ):
+        return HttpResponse(status=400)
+    if settings.MAXIMUM_UPLOADS_IN_QUEUE is not None:
+        sims = Simulation.objects.filter(user_key=request.session.session_key)
+        in_queue_count = 0
+        print("Counting sims...")
+        for sim in sims:
+            status = sim.get_analysis_status()
+            if (
+                status == "Queueing"
+                or status == "Queued"
+                or status.startswith("Running")
+            ):
+                in_queue_count += 1
+        print(f"Counted {in_queue_count} sims in quque")
+        if in_queue_count >= settings.MAXIMUM_UPLOADS_IN_QUEUE:
+            print("Rejecting due to queue limit!")
+            return HttpResponse(status=400)
+
     if request.method == "POST":
         _, dir_complete = file_manager.handle_resumable_post_request(
             request.POST,
@@ -266,6 +279,7 @@ def dashboard(request):
             "history": GroupAnalysis.objects.filter(
                 user_key=request.session.session_key
             ),
+            "MAXIMUM_UPLOAD_SIZE_IN_MB": settings.MAXIMUM_UPLOAD_SIZE_IN_MB,
         },
     )
 

@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from pathlib import Path
 import json
 import logging
@@ -10,6 +11,8 @@ from huey import crontab
 from huey.contrib.djhuey import periodic_task, task
 
 from django.conf import settings
+
+from ligand_service.models import Simulation
 
 from .contacts import (
     get_trajectory_frame_count,
@@ -313,6 +316,52 @@ def start_simulation(
     return len(frames)
 
 
-@periodic_task(crontab(minute="*/1"))
-def every_three_minutes():
-    print("MINUTE PASSED!")
+example_results_dir = settings.BASE_DIR / "example_results"
+example_results_dirnames = []
+if example_results_dir.is_dir():
+    example_results_dirnames = [dir.name for dir in example_results_dir.iterdir()]
+
+
+def remove_unused_sim_files(sim_files_dir: Path):
+    stat = sim_files_dir.stat()
+    last_modified_time = datetime.fromtimestamp(stat.st_ctime)
+    if datetime.now() - last_modified_time < timedelta(hours=4):
+        return
+    try:
+        sim = Simulation.objects.get(sim_id=sim_files_dir.name)
+        status = sim.get_analysis_status()
+        if (
+            status != "Queueing"
+            and status != "Queued"
+            and not status.startswith("Running")
+        ):
+            shutil.rmtree(sim_files_dir)
+            print(f"Removing directory: {sim_files_dir}", flush=True)
+    except:
+        shutil.rmtree(sim_files_dir)
+
+
+@periodic_task(crontab(day="*/1"))
+def clean_user_uploads():
+    print("Running routine cleanup...")
+    uploads_dir = settings.BASE_DIR / "user_uploads"
+    analysis_dirs = []
+    user_dirs = []
+    for dir in uploads_dir.iterdir():
+        if dir.name in example_results_dirnames:
+            continue
+
+        if dir.is_file() and dir.suffix == ".log":
+            continue
+
+        if "-" in dir.name:
+            analysis_dirs.append(dir)
+        else:
+            user_dirs.append(dir)
+
+    print("User directories: ", user_dirs)
+    print("Analysis directories: ", analysis_dirs)
+    for user_dir in user_dirs:
+        for subdir in user_dir.iterdir():
+            for sim_dir in subdir.iterdir():
+                remove_unused_sim_files(sim_dir)

@@ -419,6 +419,7 @@ inputTypeSelect.addEventListener('change', (event) => {
 	resetResumableFileUploaderState();
 });
 
+const MAXIMUM_FILE_SIZE_IN_MB = Number.parseFloat(document.getElementById("MAXIMUM_FILE_SIZE_IN_MB").value);
 confirmButton.addEventListener("click", (event) => {
 	const fileCount = r.files.length;
 	if (fileCount <= 0) {
@@ -427,7 +428,15 @@ confirmButton.addEventListener("click", (event) => {
 	if (selectedInput === "topTrj") {
 		if (fileCount < 2) {
 			alert('Choose two files: topology and trajectory');
+			return;
 		}
+	}
+
+	const totalFileSizeInMB = r.files.reduce((acc, curr) => acc + curr.size, 0) / 1000000
+
+	if (totalFileSizeInMB > MAXIMUM_FILE_SIZE_IN_MB) {
+		alert('Chosen file is too big');
+		return;
 	}
 
 	uploadStatusIndicator.classList.remove("hidden");
@@ -451,7 +460,7 @@ confirmButton.addEventListener("click", (event) => {
 		uuid4 = `${hex.slice(0, 8).join("")}-${hex.slice(8, 12).join("")}-${hex.slice(12, 16).join("")}-${hex.slice(16, 20).join("")}-${hex.slice(20, 32).join("")}`
 	}
 	console.log(uuid4)
-	r.opts.query = { 'fileCount': fileCount, 'uploadUUID': uuid4, };
+	r.opts.query = { 'fileCount': fileCount, 'uploadUUID': uuid4, 'totalFileSizeInMB': totalFileSizeInMB };
 	// naming the directory
 	if (selectedInput === "topTrj") {
 		fileNames = [r.files[0].fileName, r.files[1].fileName].sort()

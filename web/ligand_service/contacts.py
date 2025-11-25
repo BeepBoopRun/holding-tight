@@ -322,6 +322,7 @@ def get_results_plip(
             for i, pdbfile in enumerate(pdbfiles)
             if i % worker_count == worker_idx
         ]
+        print(f"Starting plip instance with: {len(pdbfiles_part)} frames")
         if len(pdbfiles_part) == 0:
             continue
         process = sb.Popen(

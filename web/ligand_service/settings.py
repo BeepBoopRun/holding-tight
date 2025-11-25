@@ -283,7 +283,7 @@ else:
         },
     }
 
-MAX_THREADS_PER_WORKER = load_int_from_env("MAX_THREADS_PER_WORKER", 1)
+MAX_THREADS_PER_WORKER = load_int_from_env("MAX_THREADS_PER_WORKER", 2)
 
 DELETE_RESULTS_AFTER_N_DAYS = load_int_from_env("DELETE_RESULTS_AFTER_N_DAYS")
 
